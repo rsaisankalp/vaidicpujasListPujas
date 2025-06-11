@@ -62,7 +62,7 @@ export default async function Home() {
           ...event,
           id: event.details || `fallback-${event.Date}-${event.Time}-${Math.random()}`,
           parsedDate: parsedDt || new Date(0), 
-          category: undefined, // Changed from 'Uncategorized'
+          category: undefined, // Ensures no "Uncategorized" if AI fails or is unavailable
           tags: [],
           ...visuals,
           formattedDate: parsedDt ? formatPujaDate(parsedDt) : event.Date,
