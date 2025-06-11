@@ -45,7 +45,7 @@ export default async function Home() {
             activity: event.Activity,
           });
         } catch (aiError) {
-          console.warn("AI categorization failed for event:", event.Seva, aiError);
+          // console.warn("AI categorization failed for event:", event.Seva, aiError);
           categoryData = { category: undefined, tags: [] }; // Fallback if AI fails
         }
         
@@ -53,7 +53,7 @@ export default async function Home() {
 
         return {
           ...event,
-          id: event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random()}`, 
+          id: event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random()}`, 
           parsedDate: parsedDt,
           category: categoryData.category,
           tags: categoryData.tags,
@@ -63,11 +63,11 @@ export default async function Home() {
         };
       } catch (error) {
         console.error("Error processing event:", event.Seva, error);
-        const parsedDt = parsePujaDate(event.Date, event.Time); // Attempt to parse date even on error for fallback
-        const visuals = getEventVisuals(event.Activity, event.Seva); // Get visuals even on error
+        const parsedDt = parsePujaDate(event.Date, event.Time); 
+        const visuals = getEventVisuals(event.Activity, event.Seva); 
         return {
           ...event,
-          id: event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random()}`,
+          id: event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random()}`,
           parsedDate: parsedDt || new Date(0), 
           category: undefined, 
           tags: [],
@@ -80,12 +80,13 @@ export default async function Home() {
   );
 
   processedEvents.sort((a, b) => {
-    if (!a.parsedDate || !b.parsedDate) return 0; // Should not happen with fallbacks
+    if (!a.parsedDate || !b.parsedDate) return 0;
     return a.parsedDate.getTime() - b.parsedDate.getTime();
   });
 
   const now = new Date();
-  const upcomingEvents = processedEvents.filter(event => event.parsedDate && event.parsedDate.getTime() >= now.setHours(0,0,0,0));
+  // Get events from the start of today onwards
+  const upcomingEvents = processedEvents.filter(event => event.parsedDate && event.parsedDate.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
 
 
   const tomorrowEvents = upcomingEvents.filter(event => event.parsedDate && isTomorrow(event.parsedDate));
