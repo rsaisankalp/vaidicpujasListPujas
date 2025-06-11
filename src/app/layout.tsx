@@ -1,9 +1,10 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'PujaPlace - Discover Sacred Pujas',
+  title: 'Vaidic Dharma Sansthan - Discover Sacred Pujas',
   description: 'Find and register for Vaidic puja events. Connect with divine energies through ancient rituals.',
 };
 
