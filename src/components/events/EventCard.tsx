@@ -14,7 +14,7 @@ interface EventCardProps {
 
 const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => {
   const EventIconComponent = event.icon || Zap; 
-  const registrationBaseUrl = "https://vaidicpujas.org"; // Changed base URL
+  const registrationBaseUrl = "https://vaidicpujas.org";
 
   return (
     <Card className={`flex flex-col overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 bg-card ${isTomorrowHighlight ? 'border-2 border-primary ring-2 ring-primary/50' : 'border-border'}`}>
