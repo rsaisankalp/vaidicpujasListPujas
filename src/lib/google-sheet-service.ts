@@ -76,7 +76,8 @@ function csvToPujaEventData(csv: string): PujaEventData[] {
 
 export async function fetchEvents(): Promise<PujaEventData[]> {
   try {
-    const response = await fetch(GOOGLE_SHEET_CSV_URL, { cache: 'no-store' });
+    // Fetch data and revalidate every hour (3600 seconds)
+    const response = await fetch(GOOGLE_SHEET_CSV_URL, { next: { revalidate: 3600 } });
     
     if (!response.ok) {
       console.error(`Failed to fetch CSV from Google Sheets: ${response.status} ${response.statusText}`);
