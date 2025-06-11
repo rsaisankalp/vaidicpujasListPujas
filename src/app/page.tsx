@@ -1,10 +1,11 @@
+
 import { fetchEvents } from '@/lib/google-sheet-service';
 import { categorizePujaEvent } from '@/ai/flows/categorize-puja-event';
 import { isTomorrow, isThisWeek, parsePujaDate, formatPujaDate, formatPujaTime } from '@/lib/date-utils';
 import EventSection from '@/components/events/EventSection';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { Bell, BookOpen, Flower2, Zap, UtensilsCrossed } from 'lucide-react'; // Using UtensilsCrossed for Ganpati
+import { Bell, BookOpen, Flower2, Zap, UtensilsCrossed } from 'lucide-react';
 import type { ProcessedPujaEvent, PujaEventData } from '@/types';
 
 // Helper to get icon and image hint
@@ -13,7 +14,7 @@ const getEventVisuals = (activity: string, seva: string): { icon: React.ElementT
   const lowerSeva = seva.toLowerCase();
 
   if (lowerActivity.includes('homa') || lowerSeva.includes('homa')) {
-    if (lowerSeva.includes('ganpati')) return { icon: UtensilsCrossed, imageHint: 'ganesha fire ritual' }; // More specific for Ganpati Homa
+    if (lowerSeva.includes('ganpati')) return { icon: UtensilsCrossed, imageHint: 'ganesha fire ritual' };
     return { icon: Bell, imageHint: 'fire ritual' };
   }
   if (lowerActivity.includes('parayan') || lowerSeva.includes('parayan')) {
@@ -23,7 +24,7 @@ const getEventVisuals = (activity: string, seva: string): { icon: React.ElementT
     return { icon: Flower2, imageHint: 'flower offering' };
   }
   if (lowerActivity.includes('ganpati') || lowerSeva.includes('ganpati')) {
-    return { icon: UtensilsCrossed, imageHint: 'ganesha worship' }; // Lucide has 'UtensilsCrossed' which can look like a modak or offerings
+    return { icon: UtensilsCrossed, imageHint: 'ganesha worship' };
   }
   return { icon: Zap, imageHint: 'spiritual event' };
 };
@@ -45,7 +46,7 @@ export default async function Home() {
 
         return {
           ...event,
-          id: event.details, // Using 'details' as the unique ID
+          id: event.details, 
           parsedDate: parsedDt,
           category: aiData.category,
           tags: aiData.tags,
@@ -61,7 +62,7 @@ export default async function Home() {
           ...event,
           id: event.details || `fallback-${event.Date}-${event.Time}-${Math.random()}`,
           parsedDate: parsedDt || new Date(0), 
-          category: 'Uncategorized',
+          category: undefined, // Changed from 'Uncategorized'
           tags: [],
           ...visuals,
           formattedDate: parsedDt ? formatPujaDate(parsedDt) : event.Date,
@@ -71,17 +72,15 @@ export default async function Home() {
     })
   );
 
-  // Sort events by date
   processedEvents.sort((a, b) => a.parsedDate.getTime() - b.parsedDate.getTime());
 
   const now = new Date();
-  // Filter out past events first
   const upcomingEvents = processedEvents.filter(event => event.parsedDate.getTime() >= now.setHours(0,0,0,0));
 
 
   const tomorrowEvents = upcomingEvents.filter(event => isTomorrow(event.parsedDate));
   const thisWeekEvents = upcomingEvents.filter(
-    event => isThisWeek(event.parsedDate) && !isTomorrow(event.parsedDate) // Exclude tomorrow's events from this week's list
+    event => isThisWeek(event.parsedDate) && !isTomorrow(event.parsedDate) 
   );
   const otherUpcomingEvents = upcomingEvents.filter(
     event => !isTomorrow(event.parsedDate) && !isThisWeek(event.parsedDate)
@@ -102,13 +101,13 @@ export default async function Home() {
         </section>
 
         {tomorrowEvents.length > 0 && (
-          <EventSection title="Tomorrow's Pujas" events={tomorrowEvents} isTomorrowSection />
+          <EventSection title="Tomorrow's Puja/Homa" events={tomorrowEvents} isTomorrowSection />
         )}
         {thisWeekEvents.length > 0 && (
-          <EventSection title="This Week's Pujas" events={thisWeekEvents} />
+          <EventSection title="This Week's Pujas/Homas" events={thisWeekEvents} />
         )}
         {otherUpcomingEvents.length > 0 && (
-          <EventSection title="Further Upcoming Pujas" events={otherUpcomingEvents} />
+          <EventSection title="Next Pujas/Homas" events={otherUpcomingEvents} />
         )}
         
         {upcomingEvents.length === 0 && (
