@@ -3,22 +3,27 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 const Header = () => {
-  const logoUrl = "https://i0.wp.com/vaidicpujas.org/wp-content/uploads/2020/06/cropped-VDS-AOL-Logo-white-1-1.png?fit=200%2C76&ssl=1";
-  const logoWidth = 84; // Calculated for a height of 32px based on original 200x76
-  const logoHeight = 32;
+  const logoUrl = "https://i.postimg.cc/3wDfQ1xM/vdslogo.png";
+  // Assuming the new logo's intrinsic aspect ratio is similar or can be constrained.
+  // Let's aim for a height of 32px or 40px (h-8 or h-10 in Tailwind)
+  // For vdslogo.png (300x114), if height is 32px, width = 32 * (300/114) = 84.2
+  // if height is 40px, width = 40 * (300/114) = 105.26
+  const logoWidth = 105; 
+  const logoHeight = 40;
 
   return (
     <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 shadow-md">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-2xl font-headline font-bold text-primary hover:text-primary/90 transition-colors">
+      <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 text-xl sm:text-2xl font-headline font-bold text-primary hover:text-primary/90 transition-colors">
           <Image 
             src={logoUrl} 
             alt="Vaidic Dharma Sansthan Logo" 
             width={logoWidth} 
             height={logoHeight}
-            className="h-8 w-auto" // Maintain height, auto width
+            className="h-10 w-auto" // Maintain height, auto width for responsiveness
+            priority // Prioritize loading the logo
           />
-          <span>Vaidic Dharma Sansthan</span>
+          <span className="hidden sm:inline">Vaidic Dharma Sansthan</span>
         </Link>
         <nav>
           {/* Future navigation links can go here */}
