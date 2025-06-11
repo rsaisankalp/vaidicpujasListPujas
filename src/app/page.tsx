@@ -37,32 +37,39 @@ export default async function Home() {
     rawEvents.map(async (event) => {
       try {
         const parsedDt = parsePujaDate(event.Date, event.Time);
-        const aiData = await categorizePujaEvent({
-          seva: event.Seva,
-          venue: event.Venue,
-          activity: event.Activity,
-        });
+        let categoryData;
+        try {
+           categoryData = await categorizePujaEvent({
+            seva: event.Seva,
+            venue: event.Venue,
+            activity: event.Activity,
+          });
+        } catch (aiError) {
+          console.warn("AI categorization failed for event:", event.Seva, aiError);
+          categoryData = { category: undefined, tags: [] }; // Fallback if AI fails
+        }
+        
         const visuals = getEventVisuals(event.Activity, event.Seva);
 
         return {
           ...event,
-          id: event.details, 
+          id: event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random()}`, 
           parsedDate: parsedDt,
-          category: aiData.category,
-          tags: aiData.tags,
+          category: categoryData.category,
+          tags: categoryData.tags,
           ...visuals,
           formattedDate: formatPujaDate(parsedDt),
           formattedTime: formatPujaTime(parsedDt),
         };
       } catch (error) {
         console.error("Error processing event:", event.Seva, error);
-        const parsedDt = parsePujaDate(event.Date, event.Time);
-        const visuals = getEventVisuals(event.Activity, event.Seva);
+        const parsedDt = parsePujaDate(event.Date, event.Time); // Attempt to parse date even on error for fallback
+        const visuals = getEventVisuals(event.Activity, event.Seva); // Get visuals even on error
         return {
           ...event,
-          id: event.details || `fallback-${event.Date}-${event.Time}-${Math.random()}`,
+          id: event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random()}`,
           parsedDate: parsedDt || new Date(0), 
-          category: undefined, // Ensures no "Uncategorized" if AI fails or is unavailable
+          category: undefined, 
           tags: [],
           ...visuals,
           formattedDate: parsedDt ? formatPujaDate(parsedDt) : event.Date,
@@ -72,18 +79,21 @@ export default async function Home() {
     })
   );
 
-  processedEvents.sort((a, b) => a.parsedDate.getTime() - b.parsedDate.getTime());
+  processedEvents.sort((a, b) => {
+    if (!a.parsedDate || !b.parsedDate) return 0; // Should not happen with fallbacks
+    return a.parsedDate.getTime() - b.parsedDate.getTime();
+  });
 
   const now = new Date();
-  const upcomingEvents = processedEvents.filter(event => event.parsedDate.getTime() >= now.setHours(0,0,0,0));
+  const upcomingEvents = processedEvents.filter(event => event.parsedDate && event.parsedDate.getTime() >= now.setHours(0,0,0,0));
 
 
-  const tomorrowEvents = upcomingEvents.filter(event => isTomorrow(event.parsedDate));
+  const tomorrowEvents = upcomingEvents.filter(event => event.parsedDate && isTomorrow(event.parsedDate));
   const thisWeekEvents = upcomingEvents.filter(
-    event => isThisWeek(event.parsedDate) && !isTomorrow(event.parsedDate) 
+    event => event.parsedDate && isThisWeek(event.parsedDate) && !isTomorrow(event.parsedDate) 
   );
   const otherUpcomingEvents = upcomingEvents.filter(
-    event => !isTomorrow(event.parsedDate) && !isThisWeek(event.parsedDate)
+    event => event.parsedDate && !isTomorrow(event.parsedDate) && !isThisWeek(event.parsedDate)
   );
 
 
