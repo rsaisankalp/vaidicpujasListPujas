@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,12 +9,12 @@ import type { ProcessedPujaEvent } from '@/types';
 
 interface EventCardProps {
   event: ProcessedPujaEvent;
-  isTomorrowHighlight?: boolean; // Specific prop for tomorrow's highlight
+  isTomorrowHighlight?: boolean; 
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => {
-  const EventIconComponent = event.icon || Zap; // Fallback icon
-  const registrationBaseUrl = "https://members.us.artofliving.org";
+  const EventIconComponent = event.icon || Zap; 
+  const registrationBaseUrl = "https://vaidicpujas.org"; // Changed base URL
 
   return (
     <Card className={`flex flex-col overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 bg-card ${isTomorrowHighlight ? 'border-2 border-primary ring-2 ring-primary/50' : 'border-border'}`}>
@@ -25,7 +26,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover"
           data-ai-hint={event.imageHint || "spiritual event"}
-          priority={isTomorrowHighlight} // Prioritize loading images for highlighted cards
+          priority={isTomorrowHighlight} 
         />
         {isTomorrowHighlight && (
           <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold shadow-md">
