@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         hostname: 'i0.wp.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.postimg.cc',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
