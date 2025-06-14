@@ -1,11 +1,14 @@
 
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
 import { fetchEvents } from '@/lib/google-sheet-service';
 import { categorizePujaEvent } from '@/ai/flows/categorize-puja-event';
-import { isTomorrow, isThisWeek, parsePujaDate, formatPujaDate, formatPujaTime } from '@/lib/date-utils';
+import { isTomorrow, isThisWeek, parsePujaDate, formatPujaDate, formatPujaTime, isValidDate } from '@/lib/date-utils';
 import EventSection from '@/components/events/EventSection';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { Bell, BookOpen, Flower2, Zap, UtensilsCrossed } from 'lucide-react';
+import { Bell, BookOpen, Flower2, Zap, UtensilsCrossed, Search as SearchIcon } from 'lucide-react';
 import type { ProcessedPujaEvent, PujaEventData } from '@/types';
 
 // Helper to get icon and image hint
@@ -29,104 +32,151 @@ const getEventVisuals = (activity: string, seva: string): { icon: React.ElementT
   return { icon: Zap, imageHint: 'spiritual event' };
 };
 
+export default function Home() {
+  const [allProcessedEvents, setAllProcessedEvents] = useState<ProcessedPujaEvent[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-export default async function Home() {
-  const rawEvents: PujaEventData[] = await fetchEvents();
-  
-  const processedEvents: ProcessedPujaEvent[] = await Promise.all(
-    rawEvents.map(async (event) => {
-      try {
-        const parsedDt = parsePujaDate(event.Date, event.Time);
-        let categoryData;
+  useEffect(() => {
+    async function loadEvents() {
+      setIsLoading(true);
+      const rawEvents: PujaEventData[] = await fetchEvents();
+      
+      const processedEventsPromises = rawEvents.map(async (event) => {
         try {
-           categoryData = await categorizePujaEvent({
-            seva: event.Seva,
-            venue: event.Venue,
-            activity: event.Activity,
-          });
-        } catch (aiError) {
-          // console.warn("AI categorization failed for event:", event.Seva, aiError);
-          categoryData = { category: undefined, tags: [] }; // Fallback if AI fails
+          const parsedDt = parsePujaDate(event.Date, event.Time);
+          let categoryData = { category: undefined, tags: [] };
+          if (process.env.GOOGLE_API_KEY && String(process.env.GOOGLE_API_KEY).trim() !== '') {
+            try {
+              categoryData = await categorizePujaEvent({
+                seva: event.Seva,
+                venue: event.Venue,
+                activity: event.Activity,
+              });
+            } catch (aiError) {
+              // console.warn("AI categorization failed for event:", event.Seva, aiError);
+              // Fallback is already categoryData default
+            }
+          }
+          
+          const visuals = getEventVisuals(event.Activity, event.Seva);
+
+          return {
+            ...event,
+            id: event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`, 
+            parsedDate: parsedDt,
+            category: categoryData.category,
+            tags: categoryData.tags,
+            ...visuals,
+            formattedDate: isValidDate(parsedDt) ? formatPujaDate(parsedDt) : event.Date,
+            formattedTime: isValidDate(parsedDt) ? formatPujaTime(parsedDt) : event.Time,
+          };
+        } catch (error) {
+          console.error("Error processing event:", event.Seva, error);
+          const parsedDt = parsePujaDate(event.Date, event.Time); 
+          const visuals = getEventVisuals(event.Activity, event.Seva); 
+          return {
+            ...event,
+            id: event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`,
+            parsedDate: parsedDt && isValidDate(parsedDt) ? parsedDt : new Date(0), 
+            category: undefined, 
+            tags: [],
+            ...visuals,
+            formattedDate: parsedDt && isValidDate(parsedDt) ? formatPujaDate(parsedDt) : event.Date,
+            formattedTime: parsedDt && isValidDate(parsedDt) ? formatPujaTime(parsedDt) : event.Time,
+          };
         }
-        
-        const visuals = getEventVisuals(event.Activity, event.Seva);
+      });
 
-        return {
-          ...event,
-          id: event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random()}`, 
-          parsedDate: parsedDt,
-          category: categoryData.category,
-          tags: categoryData.tags,
-          ...visuals,
-          formattedDate: formatPujaDate(parsedDt),
-          formattedTime: formatPujaTime(parsedDt),
-        };
-      } catch (error) {
-        console.error("Error processing event:", event.Seva, error);
-        const parsedDt = parsePujaDate(event.Date, event.Time); 
-        const visuals = getEventVisuals(event.Activity, event.Seva); 
-        return {
-          ...event,
-          id: event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random()}`,
-          parsedDate: parsedDt || new Date(0), 
-          category: undefined, 
-          tags: [],
-          ...visuals,
-          formattedDate: parsedDt ? formatPujaDate(parsedDt) : event.Date,
-          formattedTime: parsedDt ? formatPujaTime(parsedDt) : event.Time,
-        };
-      }
-    })
-  );
+      const settledEvents = await Promise.all(processedEventsPromises);
+      
+      settledEvents.sort((a, b) => {
+        if (!a.parsedDate || !b.parsedDate || !isValidDate(a.parsedDate) || !isValidDate(b.parsedDate)) return 0;
+        return a.parsedDate.getTime() - b.parsedDate.getTime();
+      });
+      setAllProcessedEvents(settledEvents);
+      setIsLoading(false);
+    }
+    loadEvents();
+  }, []);
 
-  processedEvents.sort((a, b) => {
-    if (!a.parsedDate || !b.parsedDate) return 0;
-    return a.parsedDate.getTime() - b.parsedDate.getTime();
-  });
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) {
+        return [];
+    }
+    const lowerSearchQuery = searchQuery.toLowerCase();
+    return allProcessedEvents.filter(event =>
+        (event.Seva && event.Seva.toLowerCase().includes(lowerSearchQuery)) ||
+        (event.Activity && event.Activity.toLowerCase().includes(lowerSearchQuery)) ||
+        (event.Venue && event.Venue.toLowerCase().includes(lowerSearchQuery)) ||
+        (event.category && event.category.toLowerCase().includes(lowerSearchQuery)) ||
+        (event.tags && event.tags.some(tag => tag.toLowerCase().includes(lowerSearchQuery)))
+    );
+  }, [searchQuery, allProcessedEvents]);
+
+  const isSearching = searchQuery.trim().length > 0;
 
   const now = new Date();
-  // Get events from the start of today onwards
-  const upcomingEvents = processedEvents.filter(event => event.parsedDate && event.parsedDate.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
+  const upcomingEvents = allProcessedEvents.filter(event => event.parsedDate && isValidDate(event.parsedDate) && event.parsedDate.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
 
-
-  const tomorrowEvents = upcomingEvents.filter(event => event.parsedDate && isTomorrow(event.parsedDate));
+  const tomorrowEvents = upcomingEvents.filter(event => event.parsedDate && isValidDate(event.parsedDate) && isTomorrow(event.parsedDate));
   const thisWeekEvents = upcomingEvents.filter(
-    event => event.parsedDate && isThisWeek(event.parsedDate) && !isTomorrow(event.parsedDate) 
+    event => event.parsedDate && isValidDate(event.parsedDate) && isThisWeek(event.parsedDate) && !isTomorrow(event.parsedDate) 
   );
   const otherUpcomingEvents = upcomingEvents.filter(
-    event => event.parsedDate && !isTomorrow(event.parsedDate) && !isThisWeek(event.parsedDate)
+    event => event.parsedDate && isValidDate(event.parsedDate) && !isTomorrow(event.parsedDate) && !isThisWeek(event.parsedDate)
   );
-
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <Header />
+      <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <section className="mb-12 text-center">
-          <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 text-primary">
-            Discover Sacred Pujas
-          </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Connect with divine energies through ancient Vaidic rituals. Find events and register with ease.
-          </p>
-        </section>
+        {!isSearching && (
+          <section className="mb-12 text-center">
+            <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 text-primary">
+              Discover Sacred Pujas
+            </h1>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+              Connect with divine energies through ancient Vaidic rituals. Find events and register with ease.
+            </p>
+          </section>
+        )}
 
-        {tomorrowEvents.length > 0 && (
-          <EventSection title="Tomorrow's Puja/Homa" events={tomorrowEvents} isTomorrowSection />
-        )}
-        {thisWeekEvents.length > 0 && (
-          <EventSection title="This Week's Pujas/Homas" events={thisWeekEvents} />
-        )}
-        {otherUpcomingEvents.length > 0 && (
-          <EventSection title="Next Pujas/Homas" events={otherUpcomingEvents} />
-        )}
-        
-        {upcomingEvents.length === 0 && (
-           <div className="text-center py-10">
-             <Zap className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-             <p className="text-xl text-muted-foreground">No upcoming pujas scheduled at the moment.</p>
-             <p className="text-muted-foreground">Please check back later for new events.</p>
-           </div>
+        {isLoading ? (
+          <div className="text-center py-10">
+            <Zap className="w-16 h-16 mx-auto text-muted-foreground mb-4 animate-pulse" />
+            <p className="text-xl text-muted-foreground">Loading events...</p>
+          </div>
+        ) : isSearching ? (
+          searchResults.length > 0 ? (
+            <EventSection title="Search Results" events={searchResults} />
+          ) : (
+            <div className="text-center py-10">
+              <SearchIcon className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <p className="text-xl text-muted-foreground">No events found matching your search.</p>
+              <p className="text-muted-foreground">Try a different search term.</p>
+            </div>
+          )
+        ) : (
+          <>
+            {tomorrowEvents.length > 0 && (
+              <EventSection title="Tomorrow's Puja/Homa" events={tomorrowEvents} isTomorrowSection />
+            )}
+            {thisWeekEvents.length > 0 && (
+              <EventSection title="This Week's Pujas/Homas" events={thisWeekEvents} />
+            )}
+            {otherUpcomingEvents.length > 0 && (
+              <EventSection title="Next Pujas/Homas" events={otherUpcomingEvents} />
+            )}
+            
+            {!isSearching && upcomingEvents.length === 0 && !isLoading && (
+               <div className="text-center py-10">
+                 <Zap className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                 <p className="text-xl text-muted-foreground">No upcoming pujas scheduled at the moment.</p>
+                 <p className="text-muted-foreground">Please check back later for new events.</p>
+               </div>
+            )}
+          </>
         )}
       </main>
       <Footer />
