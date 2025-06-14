@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Clock, MapPin, Sparkles, Zap } from 'lucide-react'; // Added Sparkles
+import { CalendarDays, Clock, MapPin, Sparkles, Zap } from 'lucide-react';
 import type { ProcessedPujaEvent } from '@/types';
 
 interface EventCardProps {
@@ -20,11 +20,11 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
     <Card className={`flex flex-col overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 bg-card ${isTomorrowHighlight ? 'border-2 border-primary ring-2 ring-primary/50' : 'border-border'}`}>
       <div className="relative w-full h-48 sm:h-56">
         <PujaImage
-          seva={event.Activity}
-          alt={event.Seva}
+          activity={event.Activity}
+          altText={event.Seva || 'Event Image'}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover"
-          dataAiHint={event.imageHint || "spiritual event"}
+          imageHint={event.imageHint} 
           priority={isTomorrowHighlight}
         />
         {isTomorrowHighlight && (
@@ -59,7 +59,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
         </div>
         <div className="flex items-start text-sm mb-3">
           <EventIconComponent className="w-4 h-4 mr-2 mt-0.5 shrink-0 text-primary" />
-          <span className="text-muted-foreground">{event.Activity.split('-').pop()}</span>
+          <span className="text-muted-foreground">{event.Activity ? event.Activity.split('-').pop() : 'Event'}</span>
         </div>
         
         {event.category && (
