@@ -62,7 +62,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
         
       </CardContent>
       <CardFooter className="p-4 mt-auto bg-card">
-        <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-transform transform hover:scale-105 py-3 text-base">
+        <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 transition-transform transform hover:scale-105 py-3 text-base">
           <Link href={`${registrationBaseUrl}${event.link}`} target="_blank" rel="noopener noreferrer">
             Register
           </Link>
