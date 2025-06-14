@@ -13,7 +13,9 @@ interface PujaImageProps {
   imageHint?: string; // This will be used for data-ai-hint
 }
 
-const PLACEHOLDER_IMAGE_URL = 'https://placehold.co/600x400.png';
+// This constant remains for potential future use or if data-ai-hint generation needs a generic placeholder URL logic,
+// but it's not used as a direct visual fallback for the main image anymore.
+// const PLACEHOLDER_IMAGE_URL = 'https://placehold.co/600x400.png'; 
 const DEFAULT_LOCAL_FALLBACK_IMAGE_PATH = '/images/pujas/default.png';
 
 export default function PujaImage({
@@ -40,20 +42,11 @@ export default function PujaImage({
   }, [activity]); 
 
   const handleError = () => {
-    const idealLocalSrcAttempted = generateInitialSrc();
-
-    if (currentSrc === idealLocalSrcAttempted) {
-      // Ideal local image failed, try the generic placeholder
-      setCurrentSrc(PLACEHOLDER_IMAGE_URL);
-    } else if (currentSrc === PLACEHOLDER_IMAGE_URL) {
-      // Generic placeholder also failed, try the final local default
-      // Avoid an infinite loop if DEFAULT_LOCAL_FALLBACK_IMAGE_PATH is somehow also PLACEHOLDER_IMAGE_URL or idealLocalSrcAttempted and failing
-      if (DEFAULT_LOCAL_FALLBACK_IMAGE_PATH !== currentSrc) {
-         setCurrentSrc(DEFAULT_LOCAL_FALLBACK_IMAGE_PATH);
-      }
+    // If the current source is not already the default fallback, set it to the default fallback.
+    // This prevents an infinite loop if default.png itself is missing and somehow onError is triggered for it.
+    if (currentSrc !== DEFAULT_LOCAL_FALLBACK_IMAGE_PATH) {
+      setCurrentSrc(DEFAULT_LOCAL_FALLBACK_IMAGE_PATH);
     }
-    // If currentSrc is already DEFAULT_LOCAL_FALLBACK_IMAGE_PATH and it fails,
-    // Image component's native alt text will be more prominent.
   };
 
   return (
@@ -69,3 +62,4 @@ export default function PujaImage({
     />
   );
 }
+
