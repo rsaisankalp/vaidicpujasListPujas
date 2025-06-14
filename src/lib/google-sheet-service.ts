@@ -22,14 +22,14 @@ function parseCsvLine(line: string): string[] {
         inQuotes = !inQuotes;
       }
     } else if (char === ',' && !inQuotes) {
-      result.push(currentField);
+      result.push(currentField.trim());
       currentField = '';
     } else {
       currentField += char;
     }
   }
-  result.push(currentField); 
-  return result.map(field => field.trim());
+  result.push(currentField.trim()); 
+  return result;
 }
 
 function csvToPujaEventData(csv: string): PujaEventData[] {
@@ -74,11 +74,9 @@ function csvToGurudevEventData(csv: string): ProcessedGurudevEvent[] {
     return [];
   }
   const headers = parseCsvLine(lines[0]);
-  const expectedHeaders = ["Event Name", "Location", "Start Date", "End Date"];
   const result: ProcessedGurudevEvent[] = [];
 
-  // Validate headers
-  consteventNameHeader = headers.find(h => h.toLowerCase() === "event name".toLowerCase()) || "Event Name";
+  const eventNameHeader = headers.find(h => h.toLowerCase() === "event name".toLowerCase()) || "Event Name";
   const locationHeader = headers.find(h => h.toLowerCase() === "location".toLowerCase()) || "Location";
   const startDateHeader = headers.find(h => h.toLowerCase() === "start date".toLowerCase()) || "Start Date";
   const endDateHeader = headers.find(h => h.toLowerCase() === "end date".toLowerCase()) || "End Date";
@@ -118,13 +116,14 @@ function csvToGurudevEventData(csv: string): ProcessedGurudevEvent[] {
 
 export async function fetchEvents(): Promise<PujaEventData[]> {
   try {
-    const response = await fetch(GOOGLE_SHEET_CSV_URL, { next: { revalidate: 3600 } });
+    const response = await fetch(GOOGLE_SHEET_CSV_URL, { next: { revalidate: 3600 } }); // Revalidate Puja events hourly
     if (!response.ok) {
       // console.error(`Failed to fetch Puja Events CSV: ${response.status} ${response.statusText}`);
       return [];
     }
     let csvData = await response.text();
-    if (csvData.startsWith('\uFEFF')) {
+    // Remove BOM if present
+    if (csvData.charCodeAt(0) === 0xFEFF) {
       csvData = csvData.substring(1);
     }
     return csvToPujaEventData(csvData);
@@ -136,13 +135,14 @@ export async function fetchEvents(): Promise<PujaEventData[]> {
 
 export async function fetchGurudevEvents(): Promise<ProcessedGurudevEvent[]> {
   try {
-    const response = await fetch(GURUDEV_EVENTS_CSV_URL, { next: { revalidate: 3600 } }); // Revalidate hourly
+    const response = await fetch(GURUDEV_EVENTS_CSV_URL, { next: { revalidate: 43200 } }); // Revalidate Gurudev events every 12 hours
     if (!response.ok) {
       // console.error(`Failed to fetch Gurudev Events CSV: ${response.status} ${response.statusText}`);
       return [];
     }
     let csvData = await response.text();
-    if (csvData.startsWith('\uFEFF')) {
+    // Remove BOM if present
+    if (csvData.charCodeAt(0) === 0xFEFF) {
       csvData = csvData.substring(1);
     }
     return csvToGurudevEventData(csvData);
@@ -151,3 +151,4 @@ export async function fetchGurudevEvents(): Promise<ProcessedGurudevEvent[]> {
     return [];
   }
 }
+

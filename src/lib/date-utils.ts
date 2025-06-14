@@ -65,9 +65,6 @@ export function parsePujaDates(dateStr: string, timeStr: string): ParsedDateResu
     startDate = parseSingleDateTime(startDateString, startFormatPattern);
     const parsedEnd = parseSingleDateTime(endDateString, endFormatPattern);
     if(isValidDate(parsedEnd)) {
-      // For ranges, ensure end date's time component is also considered, or set to end of day if time isn't specific for end.
-      // Given timeStr applies to start, for end, we might take it as start of that day if time is ambiguous for range end.
-      // However, since parseSingleDateTime already includes timeStr, we use it as is.
       endDate = parsedEnd; 
     }
 
@@ -83,13 +80,15 @@ export function isEventTomorrow(event: ProcessedPujaEvent, referenceDate: Date =
 
   const refStartOfDay = startOfDay(referenceDate);
   const tomorrowStartOfDay = startOfDay(addDays(refStartOfDay, 1));
+  const tomorrowEndOfDay = endOfDay(tomorrowStartOfDay);
   
   const eventStartOfDay = startOfDay(event.parsedStartDate);
 
   if (event.parsedEndDate && isValidDate(event.parsedEndDate)) {
     const eventEndOfDay = endOfDay(event.parsedEndDate);
     // Ranged event: true if tomorrow is within [eventStart, eventEnd] (inclusive)
-    return tomorrowStartOfDay >= eventStartOfDay && tomorrowStartOfDay <= eventEndOfDay;
+    // This means the event range overlaps with any part of tomorrow
+    return eventStartOfDay <= tomorrowEndOfDay && eventEndOfDay >= tomorrowStartOfDay;
   } else {
     // Single day event: true if event's start day is tomorrow
     return isSameDay(eventStartOfDay, tomorrowStartOfDay);
@@ -134,9 +133,10 @@ export function doesEventOverlapWithGurudevPresence(
   }
 
   const pujaEventStart = startOfDay(pujaEvent.parsedStartDate);
+  // For a single-day event, its range for overlap purposes is the whole day.
   const pujaEventEnd = pujaEvent.parsedEndDate && isValidDate(pujaEvent.parsedEndDate)
                       ? endOfDay(pujaEvent.parsedEndDate)
-                      : pujaEventStart; // Single day event, end is same as start
+                      : endOfDay(pujaEvent.parsedStartDate); 
 
   for (const ge of gurudevEvents) {
     if (!isValidDate(ge.startDate) || !isValidDate(ge.endDate)) {
@@ -154,3 +154,4 @@ export function doesEventOverlapWithGurudevPresence(
   }
   return false;
 }
+
