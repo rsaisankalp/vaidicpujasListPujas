@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, HandHeart, CalendarDays } from 'lucide-react';
+import { Search, CircleDollarSign, CalendarDays } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
               </Link>
             ) : (
               <Link href="/donations">
-                <HandHeart className="w-4 h-4 mr-0 sm:mr-2" />
+                <CircleDollarSign className="w-4 h-4 mr-0 sm:mr-2" />
                 <span className="hidden sm:inline">Donate</span>
               </Link>
             )}
