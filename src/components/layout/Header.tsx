@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Heart, CalendarDays } from 'lucide-react';
+import { Search, HandHeart, CalendarDays } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
           <Button 
             asChild 
             variant="outline" 
-            className="border-primary text-primary hover:bg-primary/10 hover:text-primary shrink-0 px-3 sm:px-4"
+            className="border-primary text-primary hover:bg-primary/10 hover:text-primary shrink-0 px-3 sm:px-4 py-2 h-10" // Adjusted padding and height
           >
             {isOnDonationsPage ? (
               <Link href="/">
@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
               </Link>
             ) : (
               <Link href="/donations">
-                <Heart className="w-4 h-4 mr-0 sm:mr-2" />
+                <HandHeart className="w-4 h-4 mr-0 sm:mr-2" />
                 <span className="hidden sm:inline">Donate</span>
               </Link>
             )}
@@ -72,3 +72,4 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
 };
 
 export default Header;
+
