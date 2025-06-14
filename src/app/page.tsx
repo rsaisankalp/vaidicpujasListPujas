@@ -11,7 +11,6 @@ import Footer from '@/components/layout/Footer';
 import { Bell, BookOpen, Flower2, Zap, UtensilsCrossed, Search as SearchIcon } from 'lucide-react';
 import type { ProcessedPujaEvent, PujaEventData } from '@/types';
 
-// Helper to get icon and image hint
 const getEventVisuals = (activity: string, seva: string): { icon: React.ElementType, imageHint: string } => {
   const lowerActivity = activity.toLowerCase();
   const lowerSeva = seva.toLowerCase();
@@ -42,11 +41,15 @@ export default function Home() {
       setIsLoading(true);
       const rawEvents: PujaEventData[] = await fetchEvents();
       
-      const processedEventsPromises = rawEvents.map(async (event) => {
+      const nonDonationEvents = rawEvents.filter(event => !event.Activity.toLowerCase().startsWith('donation-'));
+
+      const processedEventsPromises = nonDonationEvents.map(async (event) => {
         try {
           const parsedDt = parsePujaDate(event.Date, event.Time);
           let categoryData = { category: undefined, tags: [] };
-          if (process.env.GOOGLE_API_KEY && String(process.env.GOOGLE_API_KEY).trim() !== '') {
+
+          // Check for GOOGLE_API_KEY before calling AI categorization
+          if (process.env.NEXT_PUBLIC_GOOGLE_API_KEY && String(process.env.NEXT_PUBLIC_GOOGLE_API_KEY).trim() !== '') {
             try {
               categoryData = await categorizePujaEvent({
                 seva: event.Seva,
@@ -54,35 +57,45 @@ export default function Home() {
                 activity: event.Activity,
               });
             } catch (aiError) {
-              // console.warn("AI categorization failed for event:", event.Seva, aiError);
-              // Fallback is already categoryData default
+              // AI categorization failed, proceed with default categoryData
             }
           }
           
           const visuals = getEventVisuals(event.Activity, event.Seva);
+          const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+
+          let displayDate = event.Date; // Default to original date string
+          if (isValidDate(parsedDt) && !event.Date.toLowerCase().includes(' to ')) {
+            displayDate = formatPujaDate(parsedDt);
+          }
+
 
           return {
             ...event,
-            id: event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`, 
+            id: uniqueId,
             parsedDate: parsedDt,
             category: categoryData.category,
             tags: categoryData.tags,
             ...visuals,
-            formattedDate: isValidDate(parsedDt) ? formatPujaDate(parsedDt) : event.Date,
+            formattedDate: displayDate,
             formattedTime: isValidDate(parsedDt) ? formatPujaTime(parsedDt) : event.Time,
           };
         } catch (error) {
-          console.error("Error processing event:", event.Seva, error);
           const parsedDt = parsePujaDate(event.Date, event.Time); 
-          const visuals = getEventVisuals(event.Activity, event.Seva); 
+          const visuals = getEventVisuals(event.Activity, event.Seva);
+          const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+          let displayDate = event.Date;
+          if (isValidDate(parsedDt) && !event.Date.toLowerCase().includes(' to ')) {
+            displayDate = formatPujaDate(parsedDt);
+          }
           return {
             ...event,
-            id: event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`,
+            id: uniqueId,
             parsedDate: parsedDt && isValidDate(parsedDt) ? parsedDt : new Date(0), 
             category: undefined, 
             tags: [],
             ...visuals,
-            formattedDate: parsedDt && isValidDate(parsedDt) ? formatPujaDate(parsedDt) : event.Date,
+            formattedDate: displayDate,
             formattedTime: parsedDt && isValidDate(parsedDt) ? formatPujaTime(parsedDt) : event.Time,
           };
         }

@@ -12,26 +12,51 @@ export function isValidDate(date: Date): boolean {
 
 /**
  * Parses a date and time string into a Date object.
- * Date format: DD/MM/YYYY
+ * Handles single dates (DD/MM/YYYY) and date ranges ("DD MMM YYYY to DD MMM YYYY").
+ * For ranges, it parses the start date.
+ * Date format: DD/MM/YYYY or DD MMM YYYY
  * Time format: HH:MM
  */
 export function parsePujaDate(dateStr: string, timeStr: string): Date {
   if (!dateStr || !timeStr || typeof dateStr !== 'string' || typeof timeStr !== 'string') {
-    // console.error("Invalid or non-string date/time provided to parsePujaDate:", dateStr, timeStr);
-    return new Date(0); // Fallback for clearly invalid input
+    return new Date(0); 
   }
+
+  let dateToParse = dateStr.trim();
+  let formatString = 'dd/MM/yyyy HH:mm'; // Default format
+
+  // Check for date ranges like "1 Apr 2025 to 31 Mar 2026"
+  if (dateToParse.includes(' to ')) {
+    const parts = dateToParse.split(' to ');
+    dateToParse = parts[0].trim(); // Use the start date of the range
+    // Attempt to determine if the format is "d MMM yyyy" or "dd/MM/yyyy"
+    if (/\d{1,2} [A-Za-z]{3} \d{4}/.test(dateToParse)) {
+      formatString = 'd MMM yyyy HH:mm';
+    }
+    // If not "d MMM yyyy", assume "dd/MM/yyyy" (already default)
+  } else {
+     // For single dates, also check if it's "d MMM yyyy" format
+    if (/\d{1,2} [A-Za-z]{3} \d{4}/.test(dateToParse)) {
+      formatString = 'd MMM yyyy HH:mm';
+    }
+    // Otherwise, stick to 'dd/MM/yyyy HH:mm'
+  }
+
   try {
-    // Example dateStr: "13/06/2025", timeStr: "17:30" -> "13/06/2025 17:30"
-    const parsed = parse(`${dateStr.trim()} ${timeStr.trim()}`, 'dd/MM/yyyy HH:mm', new Date());
+    const parsed = parse(`${dateToParse} ${timeStr.trim()}`, formatString, new Date());
     
     if (!isValid(parsed)) { 
-        // console.error("Failed to parse date (resulted in Invalid Date object):", dateStr, timeStr, "Attempted parse with:", `${dateStr.trim()} ${timeStr.trim()}`);
-        return new Date(0); // Return a known valid fallback
+        // Fallback to trying the other common format if primary fails
+        const alternativeFormat = formatString === 'dd/MM/yyyy HH:mm' ? 'd MMM yyyy HH:mm' : 'dd/MM/yyyy HH:mm';
+        const parsedAlt = parse(`${dateToParse} ${timeStr.trim()}`, alternativeFormat, new Date());
+        if (!isValid(parsedAlt)) {
+          return new Date(0);
+        }
+        return parsedAlt;
     }
     return parsed;
   } catch (error) { 
-    // console.error("Exception during date parsing:", dateStr, timeStr, error);
-    return new Date(0); // Return a known valid fallback on exception
+    return new Date(0); 
   }
 }
 
@@ -40,7 +65,6 @@ export function parsePujaDate(dateStr: string, timeStr: string): Date {
  */
 export function isTomorrow(date: Date): boolean {
   if (!isValidDate(date)) {
-    // console.warn("isTomorrow received an invalid date:", date);
     return false;
   }
   const tomorrow = addDays(new Date(), 1);
@@ -52,12 +76,11 @@ export function isTomorrow(date: Date): boolean {
  */
 export function isThisWeek(date: Date): boolean {
   if (!isValidDate(date)) {
-    // console.warn("isThisWeek received an invalid date:", date);
     return false;
   }
   const now = new Date();
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday as start of the week
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });   // Sunday as end of the week
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 }); 
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });   
   
   return date >= weekStart && date <= weekEnd;
 }
@@ -68,7 +91,6 @@ export function isThisWeek(date: Date): boolean {
  */
 export function formatPujaDate(date: Date): string {
   if (!isValidDate(date)) {
-    // console.warn("formatPujaDate received an invalid date:", date);
     return "Invalid Date"; 
   }
   return formatDateStr(date, 'EEE, MMM d, yyyy');
@@ -80,7 +102,6 @@ export function formatPujaDate(date: Date): string {
  */
 export function formatPujaTime(date: Date): string {
   if (!isValidDate(date)) {
-    // console.warn("formatPujaTime received an invalid date:", date);
     return "Invalid Time";
   }
   return formatDateStr(date, 'h:mm a');

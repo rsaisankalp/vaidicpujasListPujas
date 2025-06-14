@@ -4,7 +4,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Input } from "@/components/ui/input";
-import { Search } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Search, Heart } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -31,16 +32,24 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
           <span className="hidden sm:inline">Vaidic Dharma Sansthan</span>
         </Link>
         
-        <div className="relative w-full max-w-lg ml-auto"> {/* Adjusted for better layout with flex parent */}
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            type="search"
-            placeholder="Search pujas by name, activity, venue..."
-            className="w-full pl-10 pr-4 py-2 h-10 rounded-lg border bg-card shadow-sm focus:ring-primary focus:border-primary"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            aria-label="Search pujas"
-          />
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              type="search"
+              placeholder="Search pujas..."
+              className="w-full pl-10 pr-4 py-2 h-10 rounded-lg border bg-card shadow-sm focus:ring-primary focus:border-primary"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              aria-label="Search pujas"
+            />
+          </div>
+          <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10 hover:text-primary shrink-0">
+            <Link href="/donations">
+              <Heart className="w-4 h-4 mr-0 sm:mr-2" />
+              <span className="hidden sm:inline">Donate</span>
+            </Link>
+          </Button>
         </div>
       </div>
     </header>
