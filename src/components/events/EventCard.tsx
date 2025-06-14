@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Clock, MapPin, Tag, Zap } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Sparkles, Zap } from 'lucide-react'; // Added Sparkles
 import type { ProcessedPujaEvent } from '@/types';
 
 interface EventCardProps {
@@ -36,6 +36,14 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
       </div>
       <CardHeader className="p-4 pb-2">
         <CardTitle className="font-headline text-xl lg:text-2xl mb-1 leading-tight">{event.Seva}</CardTitle>
+        
+        {event.isGurudevPresence && (
+          <div className="flex items-center text-sm text-accent font-semibold mb-1.5">
+            <Sparkles className="w-4 h-4 mr-2 shrink-0 text-accent" />
+            <span>In the presence of Gurudev</span>
+          </div>
+        )}
+
         <div className="flex items-center text-sm text-muted-foreground mb-1">
           <CalendarDays className="w-4 h-4 mr-2 shrink-0 text-primary" />
           <span>{event.formattedDate}</span>

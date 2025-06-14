@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { fetchEvents } from '@/lib/google-sheet-service';
+import { fetchEvents, fetchGurudevEvents } from '@/lib/google-sheet-service';
 import { categorizePujaEvent } from '@/ai/flows/categorize-puja-event';
 import { 
   parsePujaDates, 
@@ -10,13 +10,14 @@ import {
   formatPujaTime, 
   isValidDate,
   isEventTomorrow,
-  isEventThisWeek
+  isEventThisWeek,
+  doesEventOverlapWithGurudevPresence
 } from '@/lib/date-utils';
 import EventSection from '@/components/events/EventSection';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { Bell, BookOpen, Flower2, Zap, UtensilsCrossed, Search as SearchIcon } from 'lucide-react';
-import type { ProcessedPujaEvent, PujaEventData } from '@/types';
+import { Bell, BookOpen, Flower2, Zap, UtensilsCrossed, Search as SearchIcon, Sparkles } from 'lucide-react';
+import type { ProcessedPujaEvent, PujaEventData, ProcessedGurudevEvent } from '@/types';
 
 const getEventVisuals = (activity: string, seva: string): { icon: React.ElementType, imageHint: string } => {
   const lowerActivity = activity.toLowerCase();
@@ -42,12 +43,17 @@ export default function Home() {
   const [allProcessedEvents, setAllProcessedEvents] = useState<ProcessedPujaEvent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [gurudevSchedule, setGurudevSchedule] = useState<ProcessedGurudevEvent[]>([]);
 
   useEffect(() => {
-    async function loadEvents() {
+    async function loadAppData() {
       setIsLoading(true);
       try {
-        const rawEvents: PujaEventData[] = await fetchEvents();
+        const [rawEvents, rawGurudevEvents] = await Promise.all([
+          fetchEvents(),
+          fetchGurudevEvents()
+        ]);
+        setGurudevSchedule(rawGurudevEvents);
         
         const nonDonationEvents = rawEvents.filter(event => 
           event.Activity && !event.Activity.toLowerCase().startsWith('donation-')
@@ -56,8 +62,18 @@ export default function Home() {
         const processedEventsPromises = nonDonationEvents.map(async (event) => {
           try {
             const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time);
-            let categoryData = { category: undefined, tags: [] as string[] };
+            
+            const tempEventForGurudevCheck: ProcessedPujaEvent = { // Create a temporary structure for the check
+              ...event,
+              id: 'temp', // Placeholder, will be overridden
+              parsedStartDate: parsedStartDate,
+              parsedEndDate: parsedEndDate,
+              formattedDate: '', // Placeholder
+              formattedTime: '', // Placeholder
+            };
+            const isGurudevPresence = doesEventOverlapWithGurudevPresence(tempEventForGurudevCheck, rawGurudevEvents);
 
+            let categoryData = { category: undefined, tags: [] as string[] };
             if (process.env.NEXT_PUBLIC_GOOGLE_API_KEY && String(process.env.NEXT_PUBLIC_GOOGLE_API_KEY).trim() !== '') {
               try {
                 categoryData = await categorizePujaEvent({
@@ -66,8 +82,7 @@ export default function Home() {
                   activity: event.Activity || "Unknown Activity",
                 });
               } catch (aiError) {
-                // AI categorization failed, proceed with default/empty categoryData
-                // console.warn("AI categorization failed for event:", event.Seva, aiError);
+                // AI categorization failed
               }
             }
             
@@ -75,13 +90,9 @@ export default function Home() {
             const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
 
             let displayDate = event.Date; 
-            if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+            if (event.Date && !event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
               displayDate = formatPujaDate(parsedStartDate);
-            } else if (event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate) && isValidDate(parsedEndDate)) {
-              // For ranges, display the original string if it's a range, or format if parsable.
-              // The current logic already keeps event.Date as is for ranges, which is good.
-            }
-
+            } // For ranges, event.Date (original string) is used by default
 
             return {
               ...event,
@@ -93,18 +104,17 @@ export default function Home() {
               ...visuals,
               formattedDate: displayDate,
               formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
+              isGurudevPresence: isGurudevPresence,
             };
           } catch (error) {
             // console.error("Error processing event:", event.Seva, error);
             const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
             const visuals = getEventVisuals(event.Activity || "", event.Seva || "");
             const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
-            
             let displayDate = event.Date;
-            if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+            if (event.Date && !event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
               displayDate = formatPujaDate(parsedStartDate);
             }
-
             return {
               ...event,
               id: uniqueId,
@@ -115,6 +125,7 @@ export default function Home() {
               ...visuals,
               formattedDate: displayDate,
               formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
+              isGurudevPresence: false,
             };
           }
         });
@@ -131,13 +142,13 @@ export default function Home() {
         });
         setAllProcessedEvents(settledEvents);
       } catch (error) {
-        // console.error("Failed to load or process events:", error);
-        setAllProcessedEvents([]); // Set to empty array on error
+        // console.error("Failed to load or process app data:", error);
+        setAllProcessedEvents([]); 
       } finally {
         setIsLoading(false);
       }
     }
-    loadEvents();
+    loadAppData();
   }, []);
 
   const searchResults = useMemo(() => {
@@ -155,17 +166,15 @@ export default function Home() {
   }, [searchQuery, allProcessedEvents]);
 
   const isSearching = searchQuery.trim().length > 0;
-  const todayForFiltering = useMemo(() => new Date(), []); // Memoize to prevent re-renders if not necessary
+  const todayForFiltering = useMemo(() => new Date(), []); 
 
   const upcomingEvents = useMemo(() => allProcessedEvents.filter(event => {
     if (!isValidDate(event.parsedStartDate)) return false;
     const todayStartOfDay = new Date(todayForFiltering.getFullYear(), todayForFiltering.getMonth(), todayForFiltering.getDate());
     
     if (event.parsedEndDate && isValidDate(event.parsedEndDate)) {
-      // For ranged events, ensure the event's end date is not in the past
       return event.parsedEndDate >= todayStartOfDay;
     } else {
-      // For single day events, ensure the event's start date is not in the past
       return event.parsedStartDate >= todayStartOfDay;
     }
   }), [allProcessedEvents, todayForFiltering]);
@@ -179,6 +188,12 @@ export default function Home() {
   const otherUpcomingEvents = useMemo(() => upcomingEvents.filter(
     event => !isEventTomorrow(event, todayForFiltering) && !isEventThisWeek(event, todayForFiltering)
   ), [upcomingEvents, todayForFiltering]);
+
+  const tomorrowSectionTitle = useMemo(() => {
+    const hasGurudevEventTomorrow = tomorrowEvents.some(event => event.isGurudevPresence);
+    return hasGurudevEventTomorrow ? "Tomorrow's Puja/Homa in the presence of Gurudev" : "Tomorrow's Puja/Homa";
+  }, [tomorrowEvents]);
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -213,7 +228,7 @@ export default function Home() {
         ) : (
           <>
             {tomorrowEvents.length > 0 && (
-              <EventSection title="Tomorrow's Puja/Homa" events={tomorrowEvents} isTomorrowSection />
+              <EventSection title={tomorrowSectionTitle} events={tomorrowEvents} isTomorrowSection />
             )}
             {thisWeekEvents.length > 0 && (
               <EventSection title="This Week's Pujas/Homas" events={thisWeekEvents} />
