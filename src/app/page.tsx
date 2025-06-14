@@ -11,8 +11,10 @@ import {
   isValidDate,
   isEventTomorrow,
   isEventThisWeek,
-  doesEventOverlapWithGurudevPresence
+  doesEventOverlapWithGurudevPresence,
+  LONG_RUNNING_EVENT_THRESHOLD_DAYS // Import the threshold
 } from '@/lib/date-utils';
+import { differenceInDays } from 'date-fns'; // Import differenceInDays
 import EventSection from '@/components/events/EventSection';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -63,13 +65,13 @@ export default function Home() {
           try {
             const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time);
             
-            const tempEventForGurudevCheck: ProcessedPujaEvent = { // Create a temporary structure for the check
+            const tempEventForGurudevCheck: ProcessedPujaEvent = { 
               ...event,
-              id: 'temp', // Placeholder, will be overridden
+              id: 'temp', 
               parsedStartDate: parsedStartDate,
               parsedEndDate: parsedEndDate,
-              formattedDate: '', // Placeholder
-              formattedTime: '', // Placeholder
+              formattedDate: '', 
+              formattedTime: '', 
             };
             const isGurudevPresence = doesEventOverlapWithGurudevPresence(tempEventForGurudevCheck, rawGurudevEvents);
 
@@ -90,9 +92,26 @@ export default function Home() {
             const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
 
             let displayDate = event.Date; 
-            if (event.Date && !event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
-              displayDate = formatPujaDate(parsedStartDate);
-            } // For ranges, event.Date (original string) is used by default
+            let isLongRunningFlag = false;
+
+            if (isValidDate(parsedStartDate)) {
+              if (parsedEndDate && isValidDate(parsedEndDate)) {
+                const durationInDays = differenceInDays(parsedEndDate, parsedStartDate);
+                if (durationInDays > LONG_RUNNING_EVENT_THRESHOLD_DAYS) {
+                  displayDate = "Everyday";
+                  isLongRunningFlag = true;
+                } else {
+                  displayDate = event.Date; // Use original string for normal ranges
+                }
+              } else {
+                // Single date
+                displayDate = formatPujaDate(parsedStartDate);
+              }
+            } else {
+              // Invalid parsedStartDate, keep original event.Date
+              displayDate = event.Date;
+            }
+
 
             return {
               ...event,
@@ -105,27 +124,30 @@ export default function Home() {
               formattedDate: displayDate,
               formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
               isGurudevPresence: isGurudevPresence,
+              isLongRunning: isLongRunningFlag,
             };
           } catch (error) {
-            // console.error("Error processing event:", event.Seva, error);
-            const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
-            const visuals = getEventVisuals(event.Activity || "", event.Seva || "");
-            const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
-            let displayDate = event.Date;
-            if (event.Date && !event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
-              displayDate = formatPujaDate(parsedStartDate);
+            const { startDate: parsedStartDateFallback, endDate: parsedEndDateFallback } = parsePujaDates(event.Date, event.Time); 
+            const visualsFallback = getEventVisuals(event.Activity || "", event.Seva || "");
+            const uniqueIdFallback = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+            
+            let displayDateFallback = event.Date;
+            if (event.Date && !event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDateFallback)) {
+              displayDateFallback = formatPujaDate(parsedStartDateFallback);
             }
+
             return {
               ...event,
-              id: uniqueId,
-              parsedStartDate: isValidDate(parsedStartDate) ? parsedStartDate : new Date(0),
-              parsedEndDate: isValidDate(parsedEndDate) ? parsedEndDate : undefined,
+              id: uniqueIdFallback,
+              parsedStartDate: isValidDate(parsedStartDateFallback) ? parsedStartDateFallback : new Date(0),
+              parsedEndDate: isValidDate(parsedEndDateFallback) ? parsedEndDateFallback : undefined,
               category: undefined, 
               tags: [],
-              ...visuals,
-              formattedDate: displayDate,
-              formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
+              ...visualsFallback,
+              formattedDate: displayDateFallback,
+              formattedTime: isValidDate(parsedStartDateFallback) ? formatPujaTime(parsedStartDateFallback) : event.Time,
               isGurudevPresence: false,
+              isLongRunning: false,
             };
           }
         });
@@ -142,7 +164,6 @@ export default function Home() {
         });
         setAllProcessedEvents(settledEvents);
       } catch (error) {
-        // console.error("Failed to load or process app data:", error);
         setAllProcessedEvents([]); 
       } finally {
         setIsLoading(false);
@@ -172,11 +193,13 @@ export default function Home() {
     if (!isValidDate(event.parsedStartDate)) return false;
     const todayStartOfDay = new Date(todayForFiltering.getFullYear(), todayForFiltering.getMonth(), todayForFiltering.getDate());
     
-    if (event.parsedEndDate && isValidDate(event.parsedEndDate)) {
+    if (event.parsedEndDate && isValidDate(event.parsedEndDate) && !event.isLongRunning) { // For non-long-running, check end date
       return event.parsedEndDate >= todayStartOfDay;
-    } else {
-      return event.parsedStartDate >= todayStartOfDay;
+    } else if (event.isLongRunning) { // Long running events are always "upcoming" in a sense
+        return true;
     }
+    // For single dates or events without a valid end date (and not long running)
+    return event.parsedStartDate >= todayStartOfDay;
   }), [allProcessedEvents, todayForFiltering]);
 
   const tomorrowEvents = useMemo(() => upcomingEvents.filter(event => isEventTomorrow(event, todayForFiltering)), [upcomingEvents, todayForFiltering]);

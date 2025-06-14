@@ -15,6 +15,8 @@ import {
 } from 'date-fns';
 import type { ProcessedPujaEvent, ProcessedGurudevEvent } from '@/types';
 
+export const LONG_RUNNING_EVENT_THRESHOLD_DAYS = 120; // Approx 4 months
+
 export function isValidDate(date: Date | undefined | null): date is Date {
   return !!date && isValid(date) && date.getTime() !== new Date(0).getTime();
 }
@@ -130,13 +132,18 @@ export function doesEventOverlapWithGurudevPresence(
     return false;
   }
 
-  // Check if the puja event is a long-running "repeatable" event
+  // Check if the puja event is a long-running "repeatable" event (using a general threshold for this check)
   if (pujaEvent.parsedEndDate && isValidDate(pujaEvent.parsedEndDate) && isValidDate(pujaEvent.parsedStartDate)) {
+    // Use the specific LONG_RUNNING_EVENT_THRESHOLD_DAYS for Gurudev presence exclusion if it's a very long event.
+    // Or, use a separate threshold like REPEATABLE_EVENT_DURATION_THRESHOLD_DAYS if they serve different purposes.
+    // For now, let's assume if it's marked as isLongRunning (for display), it also doesn't get Gurudev presence.
+    // Or more consistently, check duration against REPEATABLE_EVENT_DURATION_THRESHOLD_DAYS for this specific Gurudev check.
     const durationInDays = differenceInDays(pujaEvent.parsedEndDate, pujaEvent.parsedStartDate);
     if (durationInDays > REPEATABLE_EVENT_DURATION_THRESHOLD_DAYS) {
       return false; // Exclude long-running events from Gurudev presence marking
     }
   }
+
 
   const pujaEventStart = startOfDay(pujaEvent.parsedStartDate);
   const pujaEventEnd = pujaEvent.parsedEndDate && isValidDate(pujaEvent.parsedEndDate)

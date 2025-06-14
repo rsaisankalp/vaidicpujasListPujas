@@ -23,6 +23,7 @@ export interface ProcessedPujaEvent extends PujaEventData {
   formattedDate: string; // Will show full range if applicable, or formatted single date
   formattedTime: string; // Based on parsedStartDate
   isGurudevPresence?: boolean;
+  isLongRunning?: boolean; // Added for long-running events
 }
 
 export interface GurudevEventDataCsv {
