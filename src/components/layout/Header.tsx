@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, CircleDollarSign, CalendarDays } from 'lucide-react';
+import { Search, IndianRupee, CalendarDays } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -15,7 +15,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
   const logoUrl = "https://i.postimg.cc/3wDfQ1xM/vdslogo.png";
-  const logoWidth = 105; 
+  const logoWidth = 105;
   const logoHeight = 40;
   const pathname = usePathname();
 
@@ -30,12 +30,12 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
             alt="Vaidic Dharma Sansthan Logo"
             width={logoWidth}
             height={logoHeight}
-            className="h-10 w-auto" 
-            priority 
+            className="h-10 w-auto"
+            priority
           />
           <span className="hidden sm:inline">Vaidic Dharma Sansthan</span>
         </Link>
-        
+
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -48,9 +48,9 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
               aria-label="Search"
             />
           </div>
-          <Button 
-            asChild 
-            variant="outline" 
+          <Button
+            asChild
+            variant="outline"
             className="border-primary text-primary hover:bg-primary/10 hover:text-primary shrink-0 px-3 sm:px-4 py-2 h-10"
           >
             {isOnDonationsPage ? (
@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
               </Link>
             ) : (
               <Link href="/donations">
-                <CircleDollarSign className="w-4 h-4 mr-0 sm:mr-2" />
+                <IndianRupee className="w-4 h-4 mr-0 sm:mr-2" />
                 <span className="hidden sm:inline">Donate</span>
               </Link>
             )}
