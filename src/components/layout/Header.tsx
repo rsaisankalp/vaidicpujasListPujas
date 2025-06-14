@@ -50,17 +50,17 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
           </div>
           <Button
             asChild
-            variant="default" // Changed from "secondary" to "default"
+            variant="default"
             className="shrink-0 px-3 sm:px-4 py-2 h-10"
           >
             {isOnDonationsPage ? (
               <Link href="/">
-                <CalendarDays className="w-4 h-4 mr-2" />
+                <CalendarDays className="w-4 h-4" />
                 <span>Events</span>
               </Link>
             ) : (
               <Link href="/donations">
-                <IndianRupee className="w-4 h-4 mr-2" />
+                <IndianRupee className="w-4 h-4" />
                 <span>Donate</span>
               </Link>
             )}
