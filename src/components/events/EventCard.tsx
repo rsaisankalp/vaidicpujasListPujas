@@ -3,7 +3,6 @@ import PujaImage from './PujaImage';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Clock, MapPin, Sparkles, Zap } from 'lucide-react';
 import type { ProcessedPujaEvent } from '@/types';
 
@@ -63,7 +62,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
         
       </CardContent>
       <CardFooter className="p-4 mt-auto bg-card">
-        <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 transition-transform transform hover:scale-105 py-3 text-base">
+        <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-transform transform hover:scale-105 py-3 text-base">
           <Link href={`${registrationBaseUrl}${event.link}`} target="_blank" rel="noopener noreferrer">
             Register
           </Link>
