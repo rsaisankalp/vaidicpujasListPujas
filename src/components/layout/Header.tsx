@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
           <span className="hidden sm:inline">Vaidic Dharma Sansthan</span>
         </Link>
 
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex flex-1 items-center justify-end gap-3 sm:gap-4 min-w-0">
           <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
