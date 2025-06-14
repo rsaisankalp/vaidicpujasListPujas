@@ -3,15 +3,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { fetchEvents } from '@/lib/google-sheet-service';
-import { parsePujaDate, formatPujaDate, formatPujaTime, isValidDate } from '@/lib/date-utils';
+import { parsePujaDates, formatPujaDate, formatPujaTime, isValidDate } from '@/lib/date-utils';
 import EventCard from '@/components/events/EventCard'; 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { Heart, Search as SearchIcon, Zap } from 'lucide-react';
+import { Heart, Search as SearchIcon } from 'lucide-react';
 import type { ProcessedPujaEvent, PujaEventData } from '@/types';
 
 const getDonationVisuals = (activity: string, seva: string): { icon: React.ElementType, imageHint: string } => {
-  // Generic visuals for donations
   return { icon: Heart, imageHint: 'charity donation' };
 };
 
@@ -29,48 +28,58 @@ export default function DonationsPage() {
 
       const processedDonations = donationEvents.map((event) => {
         try {
-          const parsedDt = parsePujaDate(event.Date, event.Time);
+          const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time);
           const visuals = getDonationVisuals(event.Activity, event.Seva);
           const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
           
           let displayDate = event.Date; // Default to original date string
-          if (isValidDate(parsedDt) && !event.Date.toLowerCase().includes(' to ')) {
-            displayDate = formatPujaDate(parsedDt);
+          // If it's not a range and the start date is valid, format the start date
+          if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+            displayDate = formatPujaDate(parsedStartDate);
           }
 
           return {
             ...event,
             id: uniqueId,
-            parsedDate: parsedDt,
-            category: "Donation", // Explicitly categorize
-            tags: ["charity", "support"], // Generic tags for donations
+            parsedStartDate: parsedStartDate,
+            parsedEndDate: parsedEndDate,
+            category: "Donation", 
+            tags: ["charity", "support"], 
             ...visuals,
             formattedDate: displayDate,
-            formattedTime: isValidDate(parsedDt) ? formatPujaTime(parsedDt) : event.Time,
+            formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
           };
         } catch (error) {
-          const parsedDt = parsePujaDate(event.Date, event.Time); 
+          const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
           const visuals = getDonationVisuals(event.Activity, event.Seva);
           const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+          
           let displayDate = event.Date;
-          if (isValidDate(parsedDt) && !event.Date.toLowerCase().includes(' to ')) {
-            displayDate = formatPujaDate(parsedDt);
+          if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+            displayDate = formatPujaDate(parsedStartDate);
           }
           return {
             ...event,
             id: uniqueId,
-            parsedDate: parsedDt && isValidDate(parsedDt) ? parsedDt : new Date(0), 
+            parsedStartDate: isValidDate(parsedStartDate) ? parsedStartDate : new Date(0),
+            parsedEndDate: isValidDate(parsedEndDate) ? parsedEndDate : undefined,
             category: "Donation",
             tags: ["charity", "support"],
             ...visuals,
             formattedDate: displayDate,
-            formattedTime: parsedDt && isValidDate(parsedDt) ? formatPujaTime(parsedDt) : event.Time,
+            formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
           };
         }
       });
       
-      // Sort donations, e.g., by Seva name or keep as is from sheet
-      processedDonations.sort((a, b) => a.Seva.localeCompare(b.Seva));
+      processedDonations.sort((a, b) => {
+         if (isValidDate(a.parsedStartDate) && isValidDate(b.parsedStartDate)) {
+           return a.parsedStartDate.getTime() - b.parsedStartDate.getTime();
+         }
+         if (isValidDate(a.parsedStartDate)) return -1;
+         if (isValidDate(b.parsedStartDate)) return 1;
+         return a.Seva.localeCompare(b.Seva); // Fallback sort by Seva if dates are invalid
+      });
       setAllProcessedDonations(processedDonations);
       setIsLoading(false);
     }
@@ -79,7 +88,7 @@ export default function DonationsPage() {
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {
-        return allProcessedDonations; // Show all donations if no search query
+        return allProcessedDonations; 
     }
     const lowerSearchQuery = searchQuery.toLowerCase();
     return allProcessedDonations.filter(event =>

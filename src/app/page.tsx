@@ -4,7 +4,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchEvents } from '@/lib/google-sheet-service';
 import { categorizePujaEvent } from '@/ai/flows/categorize-puja-event';
-import { isTomorrow, isThisWeek, parsePujaDate, formatPujaDate, formatPujaTime, isValidDate } from '@/lib/date-utils';
+import { 
+  parsePujaDates, 
+  formatPujaDate, 
+  formatPujaTime, 
+  isValidDate,
+  isEventTomorrow,
+  isEventThisWeek
+} from '@/lib/date-utils';
 import EventSection from '@/components/events/EventSection';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -45,10 +52,9 @@ export default function Home() {
 
       const processedEventsPromises = nonDonationEvents.map(async (event) => {
         try {
-          const parsedDt = parsePujaDate(event.Date, event.Time);
+          const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time);
           let categoryData = { category: undefined, tags: [] };
 
-          // Check for GOOGLE_API_KEY before calling AI categorization
           if (process.env.NEXT_PUBLIC_GOOGLE_API_KEY && String(process.env.NEXT_PUBLIC_GOOGLE_API_KEY).trim() !== '') {
             try {
               categoryData = await categorizePujaEvent({
@@ -64,39 +70,43 @@ export default function Home() {
           const visuals = getEventVisuals(event.Activity, event.Seva);
           const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
 
-          let displayDate = event.Date; // Default to original date string
-          if (isValidDate(parsedDt) && !event.Date.toLowerCase().includes(' to ')) {
-            displayDate = formatPujaDate(parsedDt);
+          let displayDate = event.Date; // Default to original date string from CSV
+          // If it's not a range and the start date is valid, format the start date
+          if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+            displayDate = formatPujaDate(parsedStartDate);
           }
-
 
           return {
             ...event,
             id: uniqueId,
-            parsedDate: parsedDt,
+            parsedStartDate: parsedStartDate,
+            parsedEndDate: parsedEndDate,
             category: categoryData.category,
             tags: categoryData.tags,
             ...visuals,
             formattedDate: displayDate,
-            formattedTime: isValidDate(parsedDt) ? formatPujaTime(parsedDt) : event.Time,
+            formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
           };
         } catch (error) {
-          const parsedDt = parsePujaDate(event.Date, event.Time); 
+          const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
           const visuals = getEventVisuals(event.Activity, event.Seva);
           const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+          
           let displayDate = event.Date;
-          if (isValidDate(parsedDt) && !event.Date.toLowerCase().includes(' to ')) {
-            displayDate = formatPujaDate(parsedDt);
+          if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+            displayDate = formatPujaDate(parsedStartDate);
           }
+
           return {
             ...event,
             id: uniqueId,
-            parsedDate: parsedDt && isValidDate(parsedDt) ? parsedDt : new Date(0), 
+            parsedStartDate: isValidDate(parsedStartDate) ? parsedStartDate : new Date(0),
+            parsedEndDate: isValidDate(parsedEndDate) ? parsedEndDate : undefined,
             category: undefined, 
             tags: [],
             ...visuals,
             formattedDate: displayDate,
-            formattedTime: parsedDt && isValidDate(parsedDt) ? formatPujaTime(parsedDt) : event.Time,
+            formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
           };
         }
       });
@@ -104,8 +114,8 @@ export default function Home() {
       const settledEvents = await Promise.all(processedEventsPromises);
       
       settledEvents.sort((a, b) => {
-        if (!a.parsedDate || !b.parsedDate || !isValidDate(a.parsedDate) || !isValidDate(b.parsedDate)) return 0;
-        return a.parsedDate.getTime() - b.parsedDate.getTime();
+        if (!isValidDate(a.parsedStartDate) || !isValidDate(b.parsedStartDate)) return 0;
+        return a.parsedStartDate.getTime() - b.parsedStartDate.getTime();
       });
       setAllProcessedEvents(settledEvents);
       setIsLoading(false);
@@ -129,15 +139,27 @@ export default function Home() {
 
   const isSearching = searchQuery.trim().length > 0;
 
-  const now = new Date();
-  const upcomingEvents = allProcessedEvents.filter(event => event.parsedDate && isValidDate(event.parsedDate) && event.parsedDate.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
+  const todayForFiltering = new Date();
 
-  const tomorrowEvents = upcomingEvents.filter(event => event.parsedDate && isValidDate(event.parsedDate) && isTomorrow(event.parsedDate));
+  const upcomingEvents = allProcessedEvents.filter(event => {
+    if (!isValidDate(event.parsedStartDate)) return false;
+    const todayStartOfDay = new Date(todayForFiltering.getFullYear(), todayForFiltering.getMonth(), todayForFiltering.getDate());
+    
+    if (event.parsedEndDate && isValidDate(event.parsedEndDate)) {
+      return event.parsedEndDate >= todayStartOfDay;
+    } else {
+      return event.parsedStartDate >= todayStartOfDay;
+    }
+  });
+
+  const tomorrowEvents = upcomingEvents.filter(event => isEventTomorrow(event, todayForFiltering));
+  
   const thisWeekEvents = upcomingEvents.filter(
-    event => event.parsedDate && isValidDate(event.parsedDate) && isThisWeek(event.parsedDate) && !isTomorrow(event.parsedDate) 
+    event => isEventThisWeek(event, todayForFiltering) && !isEventTomorrow(event, todayForFiltering) 
   );
+  
   const otherUpcomingEvents = upcomingEvents.filter(
-    event => event.parsedDate && isValidDate(event.parsedDate) && !isTomorrow(event.parsedDate) && !isThisWeek(event.parsedDate)
+    event => !isEventTomorrow(event, todayForFiltering) && !isEventThisWeek(event, todayForFiltering)
   );
 
   return (
