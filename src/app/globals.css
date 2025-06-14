@@ -14,7 +14,7 @@
     --popover: 47 56% 93%; /* Slightly lighter beige for popovers */
     --popover-foreground: 30 19% 25%; /* Dark Brown */
 
-    --primary: 19 90% 54%; /* New Orange #F4631E */
+    --primary: 34 90% 58%; /* Original Deep Saffron #F4A22D */
     --primary-foreground: 47 100% 98%; /* Light Cream #FFFBEA */
 
     --secondary: 25 70% 70%; /* Muted Saffron #E8A87C */
@@ -31,11 +31,11 @@
 
     --border: 47 40% 80%; /* Subtle Border #DCD5B7 */
     --input: 47 40% 85%; /* Slightly Lighter for Input BG #E2DBC7 */
-    --ring: 19 90% 54%; /* Primary color for focus rings, now #F4631E */
+    --ring: 34 90% 58%; /* Original Deep Saffron for focus rings */
 
     --radius: 0.5rem;
 
-    --chart-1: 19 90% 54%;
+    --chart-1: 34 90% 58%; /* Original Deep Saffron */
     --chart-2: 45 65% 52%;
     --chart-3: 25 70% 70%;
     --chart-4: 47 56% 70%;
@@ -44,12 +44,12 @@
     /* Sidebar variables */
     --sidebar-background: 47 56% 95%;
     --sidebar-foreground: 30 19% 25%;
-    --sidebar-primary: 19 90% 54%; /* Updated to match new primary */
+    --sidebar-primary: 34 90% 58%; /* Original Deep Saffron */
     --sidebar-primary-foreground: 47 100% 98%; /* Matches primary-foreground */
     --sidebar-accent: 45 65% 52%;
     --sidebar-accent-foreground: 17 27% 20%;
     --sidebar-border: 47 40% 80%;
-    --sidebar-ring: 19 90% 54%; /* Updated to match new primary */
+    --sidebar-ring: 34 90% 58%; /* Original Deep Saffron */
   }
 }
 
