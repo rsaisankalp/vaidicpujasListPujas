@@ -33,7 +33,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
           </div>
         )}
         {event.isGurudevPresence && (
-          <div className="absolute bottom-3 left-3 bg-accent text-accent-foreground px-3 py-1.5 rounded-full text-xs font-semibold shadow-md flex items-center gap-1">
+           <div className="absolute bottom-3 left-3 bg-accent text-accent-foreground px-3 py-1.5 rounded-full text-xs font-semibold shadow-md flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
             <span>Gurudev's Presence</span>
           </div>
@@ -61,18 +61,6 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
           <span className="text-muted-foreground">{event.Activity ? event.Activity.split('-').pop() : 'Event'}</span>
         </div>
         
-        {event.category && (
-          <div className="mb-2">
-            <Badge variant="secondary" className="text-xs bg-secondary/70 text-secondary-foreground py-1 px-2 rounded-md">{event.category}</Badge>
-          </div>
-        )}
-        {event.tags && event.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {event.tags.slice(0, 3).map(tag => (
-              <Badge key={tag} variant="outline" className="text-xs border-primary/50 text-primary py-0.5 px-1.5 rounded-md">{tag}</Badge>
-            ))}
-          </div>
-        )}
       </CardContent>
       <CardFooter className="p-4 mt-auto bg-card">
         <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 transition-transform transform hover:scale-105 py-3 text-base">
