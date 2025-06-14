@@ -50,8 +50,8 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
           </div>
           <Button
             asChild
-            variant="secondary" // Changed from "outline"
-            className="shrink-0 px-3 sm:px-4 py-2 h-10" // Removed primary color specific classes
+            variant="default" // Changed from "secondary" to "default"
+            className="shrink-0 px-3 sm:px-4 py-2 h-10"
           >
             {isOnDonationsPage ? (
               <Link href="/">
