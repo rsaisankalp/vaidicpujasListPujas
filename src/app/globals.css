@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +14,7 @@
     --popover: 47 56% 93%; /* Slightly lighter beige for popovers */
     --popover-foreground: 30 19% 25%; /* Dark Brown */
 
-    --primary: 30 100% 60%; /* Deep Saffron #FF9933 */
+    --primary: 19 90% 54%; /* New Orange #F4631E */
     --primary-foreground: 47 100% 98%; /* Light Cream #FFFBEA */
 
     --secondary: 25 70% 70%; /* Muted Saffron #E8A87C */
@@ -30,25 +31,25 @@
 
     --border: 47 40% 80%; /* Subtle Border #DCD5B7 */
     --input: 47 40% 85%; /* Slightly Lighter for Input BG #E2DBC7 */
-    --ring: 30 100% 60%; /* Primary color for focus rings */
+    --ring: 19 90% 54%; /* Primary color for focus rings, now #F4631E */
 
     --radius: 0.5rem;
 
-    --chart-1: 30 100% 60%;
+    --chart-1: 19 90% 54%;
     --chart-2: 45 65% 52%;
     --chart-3: 25 70% 70%;
     --chart-4: 47 56% 70%;
     --chart-5: 30 30% 50%;
 
-    /* Sidebar variables - keeping them generic for now, can be themed similarly if sidebar is used */
+    /* Sidebar variables */
     --sidebar-background: 47 56% 95%;
     --sidebar-foreground: 30 19% 25%;
-    --sidebar-primary: 30 100% 60%;
-    --sidebar-primary-foreground: 47 100% 98%;
+    --sidebar-primary: 19 90% 54%; /* Updated to match new primary */
+    --sidebar-primary-foreground: 47 100% 98%; /* Matches primary-foreground */
     --sidebar-accent: 45 65% 52%;
     --sidebar-accent-foreground: 17 27% 20%;
     --sidebar-border: 47 40% 80%;
-    --sidebar-ring: 30 100% 60%;
+    --sidebar-ring: 19 90% 54%; /* Updated to match new primary */
   }
 }
 
