@@ -22,4 +22,19 @@ export interface ProcessedPujaEvent extends PujaEventData {
   imageHint?: string;
   formattedDate: string; // Will show full range if applicable, or formatted single date
   formattedTime: string; // Based on parsedStartDate
+  isGurudevPresence?: boolean;
+}
+
+export interface GurudevEventDataCsv {
+  "Event Name": string;
+  "Location": string;
+  "Start Date": string;
+  "End Date": string;
+}
+
+export interface ProcessedGurudevEvent {
+  eventName: string;
+  location: string;
+  startDate: Date;
+  endDate: Date;
 }
