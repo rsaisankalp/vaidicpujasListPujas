@@ -41,10 +41,12 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
       <CardHeader className="p-4 pb-2">
         <CardTitle className="font-headline text-xl lg:text-2xl mb-1 leading-tight">{event.Seva}</CardTitle>
         
-        <div className="flex items-center text-sm text-muted-foreground mb-1">
-          <CalendarDays className="w-4 h-4 mr-2 shrink-0 text-primary" />
-          <span>{event.formattedDate}</span>
-        </div>
+        {event.category !== "Donation" && (
+          <div className="flex items-center text-sm text-muted-foreground mb-1">
+            <CalendarDays className="w-4 h-4 mr-2 shrink-0 text-primary" />
+            <span>{event.formattedDate}</span>
+          </div>
+        )}
         {event.category !== "Donation" && (
           <div className="flex items-center text-sm text-muted-foreground">
             <Clock className="w-4 h-4 mr-2 shrink-0 text-primary" />
