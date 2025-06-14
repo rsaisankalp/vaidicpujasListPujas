@@ -8,11 +8,11 @@ import type { ProcessedPujaEvent } from '@/types';
 
 interface EventCardProps {
   event: ProcessedPujaEvent;
-  isTomorrowHighlight?: boolean; 
+  isTomorrowHighlight?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => {
-  const EventIconComponent = event.icon || Zap; 
+  const EventIconComponent = event.icon || Zap;
   const registrationBaseUrl = "https://vaidicpujas.org";
 
   return (
@@ -23,7 +23,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
           altText={event.Seva || 'Event Image'}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover"
-          imageHint={event.imageHint} 
+          imageHint={event.imageHint}
           priority={isTomorrowHighlight}
         />
         {isTomorrowHighlight && (
@@ -45,10 +45,12 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
           <CalendarDays className="w-4 h-4 mr-2 shrink-0 text-primary" />
           <span>{event.formattedDate}</span>
         </div>
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Clock className="w-4 h-4 mr-2 shrink-0 text-primary" />
-          <span>{event.formattedTime}</span>
-        </div>
+        {event.category !== "Donation" && (
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Clock className="w-4 h-4 mr-2 shrink-0 text-primary" />
+            <span>{event.formattedTime}</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-4 pt-2 flex-grow">
         <div className="flex items-start text-sm mb-2">
