@@ -56,12 +56,12 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
             {isOnDonationsPage ? (
               <Link href="/">
                 <CalendarDays className="w-4 h-4" />
-                <span>Events</span>
+                <span className="font-bold">Events</span>
               </Link>
             ) : (
               <Link href="/donations">
                 <IndianRupee className="w-4 h-4" />
-                <span>Donate</span>
+                <span className="font-bold">Donate</span>
               </Link>
             )}
           </Button>
@@ -72,3 +72,4 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
 };
 
 export default Header;
+
