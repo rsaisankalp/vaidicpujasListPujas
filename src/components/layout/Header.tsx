@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
           <Button 
             asChild 
             variant="outline" 
-            className="border-primary text-primary hover:bg-primary/10 hover:text-primary shrink-0 px-3 sm:px-4 py-2 h-10" // Adjusted padding and height
+            className="border-primary text-primary hover:bg-primary/10 hover:text-primary shrink-0 px-3 sm:px-4 py-2 h-10"
           >
             {isOnDonationsPage ? (
               <Link href="/">
@@ -72,4 +72,3 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
 };
 
 export default Header;
-

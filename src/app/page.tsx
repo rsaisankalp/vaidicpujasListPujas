@@ -46,79 +46,96 @@ export default function Home() {
   useEffect(() => {
     async function loadEvents() {
       setIsLoading(true);
-      const rawEvents: PujaEventData[] = await fetchEvents();
-      
-      const nonDonationEvents = rawEvents.filter(event => !event.Activity.toLowerCase().startsWith('donation-'));
+      try {
+        const rawEvents: PujaEventData[] = await fetchEvents();
+        
+        const nonDonationEvents = rawEvents.filter(event => 
+          event.Activity && !event.Activity.toLowerCase().startsWith('donation-')
+        );
 
-      const processedEventsPromises = nonDonationEvents.map(async (event) => {
-        try {
-          const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time);
-          let categoryData = { category: undefined, tags: [] };
+        const processedEventsPromises = nonDonationEvents.map(async (event) => {
+          try {
+            const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time);
+            let categoryData = { category: undefined, tags: [] as string[] };
 
-          if (process.env.NEXT_PUBLIC_GOOGLE_API_KEY && String(process.env.NEXT_PUBLIC_GOOGLE_API_KEY).trim() !== '') {
-            try {
-              categoryData = await categorizePujaEvent({
-                seva: event.Seva,
-                venue: event.Venue,
-                activity: event.Activity,
-              });
-            } catch (aiError) {
-              // AI categorization failed, proceed with default categoryData
+            if (process.env.NEXT_PUBLIC_GOOGLE_API_KEY && String(process.env.NEXT_PUBLIC_GOOGLE_API_KEY).trim() !== '') {
+              try {
+                categoryData = await categorizePujaEvent({
+                  seva: event.Seva || "Unknown Seva",
+                  venue: event.Venue || "Unknown Venue",
+                  activity: event.Activity || "Unknown Activity",
+                });
+              } catch (aiError) {
+                // AI categorization failed, proceed with default/empty categoryData
+                // console.warn("AI categorization failed for event:", event.Seva, aiError);
+              }
             }
+            
+            const visuals = getEventVisuals(event.Activity || "", event.Seva || "");
+            const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+
+            let displayDate = event.Date; 
+            if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+              displayDate = formatPujaDate(parsedStartDate);
+            } else if (event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate) && isValidDate(parsedEndDate)) {
+              // For ranges, display the original string if it's a range, or format if parsable.
+              // The current logic already keeps event.Date as is for ranges, which is good.
+            }
+
+
+            return {
+              ...event,
+              id: uniqueId,
+              parsedStartDate: parsedStartDate,
+              parsedEndDate: parsedEndDate,
+              category: categoryData.category,
+              tags: categoryData.tags,
+              ...visuals,
+              formattedDate: displayDate,
+              formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
+            };
+          } catch (error) {
+            // console.error("Error processing event:", event.Seva, error);
+            const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
+            const visuals = getEventVisuals(event.Activity || "", event.Seva || "");
+            const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+            
+            let displayDate = event.Date;
+            if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+              displayDate = formatPujaDate(parsedStartDate);
+            }
+
+            return {
+              ...event,
+              id: uniqueId,
+              parsedStartDate: isValidDate(parsedStartDate) ? parsedStartDate : new Date(0),
+              parsedEndDate: isValidDate(parsedEndDate) ? parsedEndDate : undefined,
+              category: undefined, 
+              tags: [],
+              ...visuals,
+              formattedDate: displayDate,
+              formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
+            };
           }
-          
-          const visuals = getEventVisuals(event.Activity, event.Seva);
-          const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+        });
 
-          let displayDate = event.Date; // Default to original date string from CSV
-          // If it's not a range and the start date is valid, format the start date
-          if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
-            displayDate = formatPujaDate(parsedStartDate);
+        const settledEvents = await Promise.all(processedEventsPromises);
+        
+        settledEvents.sort((a, b) => {
+          if (isValidDate(a.parsedStartDate) && isValidDate(b.parsedStartDate)) {
+            return a.parsedStartDate.getTime() - b.parsedStartDate.getTime();
           }
-
-          return {
-            ...event,
-            id: uniqueId,
-            parsedStartDate: parsedStartDate,
-            parsedEndDate: parsedEndDate,
-            category: categoryData.category,
-            tags: categoryData.tags,
-            ...visuals,
-            formattedDate: displayDate,
-            formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
-          };
-        } catch (error) {
-          const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
-          const visuals = getEventVisuals(event.Activity, event.Seva);
-          const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
-          
-          let displayDate = event.Date;
-          if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
-            displayDate = formatPujaDate(parsedStartDate);
-          }
-
-          return {
-            ...event,
-            id: uniqueId,
-            parsedStartDate: isValidDate(parsedStartDate) ? parsedStartDate : new Date(0),
-            parsedEndDate: isValidDate(parsedEndDate) ? parsedEndDate : undefined,
-            category: undefined, 
-            tags: [],
-            ...visuals,
-            formattedDate: displayDate,
-            formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
-          };
-        }
-      });
-
-      const settledEvents = await Promise.all(processedEventsPromises);
-      
-      settledEvents.sort((a, b) => {
-        if (!isValidDate(a.parsedStartDate) || !isValidDate(b.parsedStartDate)) return 0;
-        return a.parsedStartDate.getTime() - b.parsedStartDate.getTime();
-      });
-      setAllProcessedEvents(settledEvents);
-      setIsLoading(false);
+          if (isValidDate(a.parsedStartDate)) return -1;
+          if (isValidDate(b.parsedStartDate)) return 1;
+          return (a.Seva || "").localeCompare(b.Seva || ""); 
+        });
+        setAllProcessedEvents(settledEvents);
+      } catch (error) {
+        // console.error("Failed to load or process events:", error);
+        setAllProcessedEvents([]); // Set to empty array on error
+      } finally {
+        setIsLoading(false);
+      }
     }
     loadEvents();
   }, []);
@@ -138,29 +155,30 @@ export default function Home() {
   }, [searchQuery, allProcessedEvents]);
 
   const isSearching = searchQuery.trim().length > 0;
+  const todayForFiltering = useMemo(() => new Date(), []); // Memoize to prevent re-renders if not necessary
 
-  const todayForFiltering = new Date();
-
-  const upcomingEvents = allProcessedEvents.filter(event => {
+  const upcomingEvents = useMemo(() => allProcessedEvents.filter(event => {
     if (!isValidDate(event.parsedStartDate)) return false;
     const todayStartOfDay = new Date(todayForFiltering.getFullYear(), todayForFiltering.getMonth(), todayForFiltering.getDate());
     
     if (event.parsedEndDate && isValidDate(event.parsedEndDate)) {
+      // For ranged events, ensure the event's end date is not in the past
       return event.parsedEndDate >= todayStartOfDay;
     } else {
+      // For single day events, ensure the event's start date is not in the past
       return event.parsedStartDate >= todayStartOfDay;
     }
-  });
+  }), [allProcessedEvents, todayForFiltering]);
 
-  const tomorrowEvents = upcomingEvents.filter(event => isEventTomorrow(event, todayForFiltering));
+  const tomorrowEvents = useMemo(() => upcomingEvents.filter(event => isEventTomorrow(event, todayForFiltering)), [upcomingEvents, todayForFiltering]);
   
-  const thisWeekEvents = upcomingEvents.filter(
+  const thisWeekEvents = useMemo(() => upcomingEvents.filter(
     event => isEventThisWeek(event, todayForFiltering) && !isEventTomorrow(event, todayForFiltering) 
-  );
+  ), [upcomingEvents, todayForFiltering]);
   
-  const otherUpcomingEvents = upcomingEvents.filter(
+  const otherUpcomingEvents = useMemo(() => upcomingEvents.filter(
     event => !isEventTomorrow(event, todayForFiltering) && !isEventThisWeek(event, todayForFiltering)
-  );
+  ), [upcomingEvents, todayForFiltering]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
