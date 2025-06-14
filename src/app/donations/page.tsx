@@ -11,6 +11,8 @@ import { Heart, Search as SearchIcon } from 'lucide-react';
 import type { ProcessedPujaEvent, PujaEventData } from '@/types';
 
 const getDonationVisuals = (activity: string, seva: string): { icon: React.ElementType, imageHint: string } => {
+  // Example: customize based on activity or seva if needed
+  // For now, all donations use the Heart icon and a general hint.
   return { icon: Heart, imageHint: 'charity donation' };
 };
 
@@ -22,66 +24,75 @@ export default function DonationsPage() {
   useEffect(() => {
     async function loadDonations() {
       setIsLoading(true);
-      const rawEvents: PujaEventData[] = await fetchEvents();
+      try {
+        const rawEvents: PujaEventData[] = await fetchEvents();
       
-      const donationEvents = rawEvents.filter(event => event.Activity.toLowerCase().startsWith('donation-'));
+        const donationEvents = rawEvents.filter(event => 
+          event.Activity && event.Activity.toLowerCase().startsWith('donation-')
+        );
 
-      const processedDonations = donationEvents.map((event) => {
-        try {
-          const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time);
-          const visuals = getDonationVisuals(event.Activity, event.Seva);
-          const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
-          
-          let displayDate = event.Date; // Default to original date string
-          // If it's not a range and the start date is valid, format the start date
-          if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
-            displayDate = formatPujaDate(parsedStartDate);
-          }
+        const processedDonations = donationEvents.map((event) => {
+          try {
+            const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time);
+            const visuals = getDonationVisuals(event.Activity || "", event.Seva || "");
+            const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+            
+            let displayDate = event.Date; 
+            if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+              displayDate = formatPujaDate(parsedStartDate);
+            }
+            // For ranges, the original date string is used by default if it includes ' to '
 
-          return {
-            ...event,
-            id: uniqueId,
-            parsedStartDate: parsedStartDate,
-            parsedEndDate: parsedEndDate,
-            category: "Donation", 
-            tags: ["charity", "support"], 
-            ...visuals,
-            formattedDate: displayDate,
-            formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
-          };
-        } catch (error) {
-          const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
-          const visuals = getDonationVisuals(event.Activity, event.Seva);
-          const uniqueId = event.details || event.UniqueID || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
-          
-          let displayDate = event.Date;
-          if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
-            displayDate = formatPujaDate(parsedStartDate);
+            return {
+              ...event,
+              id: uniqueId,
+              parsedStartDate: parsedStartDate,
+              parsedEndDate: parsedEndDate,
+              category: "Donation", 
+              tags: ["charity", "support"], 
+              ...visuals,
+              formattedDate: displayDate,
+              formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
+            };
+          } catch (error) {
+            // console.error("Error processing donation event:", event.Seva, error);
+            const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
+            const visuals = getDonationVisuals(event.Activity || "", event.Seva || "");
+            const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
+            
+            let displayDate = event.Date;
+            if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
+              displayDate = formatPujaDate(parsedStartDate);
+            }
+            return {
+              ...event,
+              id: uniqueId,
+              parsedStartDate: isValidDate(parsedStartDate) ? parsedStartDate : new Date(0),
+              parsedEndDate: isValidDate(parsedEndDate) ? parsedEndDate : undefined,
+              category: "Donation",
+              tags: ["charity", "support"],
+              ...visuals,
+              formattedDate: displayDate,
+              formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
+            };
           }
-          return {
-            ...event,
-            id: uniqueId,
-            parsedStartDate: isValidDate(parsedStartDate) ? parsedStartDate : new Date(0),
-            parsedEndDate: isValidDate(parsedEndDate) ? parsedEndDate : undefined,
-            category: "Donation",
-            tags: ["charity", "support"],
-            ...visuals,
-            formattedDate: displayDate,
-            formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
-          };
-        }
-      });
+        });
       
-      processedDonations.sort((a, b) => {
-         if (isValidDate(a.parsedStartDate) && isValidDate(b.parsedStartDate)) {
-           return a.parsedStartDate.getTime() - b.parsedStartDate.getTime();
-         }
-         if (isValidDate(a.parsedStartDate)) return -1;
-         if (isValidDate(b.parsedStartDate)) return 1;
-         return a.Seva.localeCompare(b.Seva); // Fallback sort by Seva if dates are invalid
-      });
-      setAllProcessedDonations(processedDonations);
-      setIsLoading(false);
+        processedDonations.sort((a, b) => {
+           if (isValidDate(a.parsedStartDate) && isValidDate(b.parsedStartDate)) {
+             return a.parsedStartDate.getTime() - b.parsedStartDate.getTime();
+           }
+           if (isValidDate(a.parsedStartDate)) return -1;
+           if (isValidDate(b.parsedStartDate)) return 1;
+           return (a.Seva || "").localeCompare(b.Seva || ""); 
+        });
+        setAllProcessedDonations(processedDonations);
+      } catch (error) {
+        // console.error("Failed to load or process donations:", error);
+        setAllProcessedDonations([]);
+      } finally {
+        setIsLoading(false);
+      }
     }
     loadDonations();
   }, []);
