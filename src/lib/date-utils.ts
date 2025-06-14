@@ -10,7 +10,8 @@ import {
   isValid, 
   isWithinInterval,
   startOfDay,
-  endOfDay
+  endOfDay,
+  differenceInDays
 } from 'date-fns';
 import type { ProcessedPujaEvent, ProcessedGurudevEvent } from '@/types';
 
@@ -36,7 +37,7 @@ export function parsePujaDates(dateStr: string, timeStr: string): ParsedDateResu
   const parseSingleDateTime = (singleDateStr: string, formatPattern: string): Date => {
     const parsed = parse(`${singleDateStr} ${timeInputStr}`, formatPattern, new Date());
     if (!isValid(parsed)) {
-      const alternativeFormat = formatPattern === 'dd/MM/yyyy HH:mm' ? 'd MMM yyyy HH:mm' : 'dd/MM/yyyy HH:mm';
+      const alternativeFormat = formatPattern.startsWith('d MMM yyyy') ? 'dd/MM/yyyy HH:mm' : 'd MMM yyyy HH:mm';
       const parsedAlt = parse(`${singleDateStr} ${timeInputStr}`, alternativeFormat, new Date());
       return isValid(parsedAlt) ? parsedAlt : new Date(0);
     }
@@ -48,22 +49,22 @@ export function parsePujaDates(dateStr: string, timeStr: string): ParsedDateResu
       primaryDateFormat = 'd MMM yyyy';
   }
 
-  if (dateInputStr.includes(' to ')) {
-    const parts = dateInputStr.split(' to ');
+  if (dateInputStr.toLowerCase().includes(' to ')) {
+    const parts = dateInputStr.split(/ to /i); // Case-insensitive split
     const startDateString = parts[0].trim();
     const endDateString = parts[1].trim();
 
-    let startFormatPattern = 'dd/MM/yyyy HH:mm';
-    if (/\d{1,2} [A-Za-z]{3} \d{4}/.test(startDateString)) {
-        startFormatPattern = 'd MMM yyyy HH:mm';
-    }
-    let endFormatPattern = 'dd/MM/yyyy HH:mm';
-     if (/\d{1,2} [A-Za-z]{3} \d{4}/.test(endDateString)) {
-        endFormatPattern = 'd MMM yyyy HH:mm';
-    }
+    let startFormatPattern = primaryDateFormat === 'd MMM yyyy' ? 'd MMM yyyy HH:mm' : 'dd/MM/yyyy HH:mm';
+    if (/\d{1,2}\/\d{1,2}\/\d{4}/.test(startDateString)) startFormatPattern = 'dd/MM/yyyy HH:mm';
+    else if (/\d{1,2} [A-Za-z]{3} \d{4}/.test(startDateString)) startFormatPattern = 'd MMM yyyy HH:mm';
+    
+    let endFormatPattern = primaryDateFormat === 'd MMM yyyy' ? 'd MMM yyyy HH:mm' : 'dd/MM/yyyy HH:mm';
+    if (/\d{1,2}\/\d{1,2}\/\d{4}/.test(endDateString)) endFormatPattern = 'dd/MM/yyyy HH:mm';
+    else if (/\d{1,2} [A-Za-z]{3} \d{4}/.test(endDateString)) endFormatPattern = 'd MMM yyyy HH:mm';
     
     startDate = parseSingleDateTime(startDateString, startFormatPattern);
     const parsedEnd = parseSingleDateTime(endDateString, endFormatPattern);
+
     if(isValidDate(parsedEnd)) {
       endDate = parsedEnd; 
     }
@@ -86,11 +87,8 @@ export function isEventTomorrow(event: ProcessedPujaEvent, referenceDate: Date =
 
   if (event.parsedEndDate && isValidDate(event.parsedEndDate)) {
     const eventEndOfDay = endOfDay(event.parsedEndDate);
-    // Ranged event: true if tomorrow is within [eventStart, eventEnd] (inclusive)
-    // This means the event range overlaps with any part of tomorrow
     return eventStartOfDay <= tomorrowEndOfDay && eventEndOfDay >= tomorrowStartOfDay;
   } else {
-    // Single day event: true if event's start day is tomorrow
     return isSameDay(eventStartOfDay, tomorrowStartOfDay);
   }
 }
@@ -106,10 +104,8 @@ export function isEventThisWeek(event: ProcessedPujaEvent, referenceDate: Date =
 
   if (event.parsedEndDate && isValidDate(event.parsedEndDate)) {
     const eventEndOfDay = endOfDay(event.parsedEndDate);
-    // Ranged event: true if event's range [start, end] overlaps with [weekStart, weekEnd]
     return eventStartOfDay <= weekEndBoundary && eventEndOfDay >= weekStartBoundary;
   } else {
-    // Single day event: true if event's start day is within this week
     return eventStartOfDay >= weekStartBoundary && eventStartOfDay <= weekEndBoundary;
   }
 }
@@ -124,6 +120,8 @@ export function formatPujaTime(date: Date): string {
   return formatDateStr(date, 'h:mm a');
 }
 
+const REPEATABLE_EVENT_DURATION_THRESHOLD_DAYS = 60; // Events longer than this are "repeatable"
+
 export function doesEventOverlapWithGurudevPresence(
   pujaEvent: ProcessedPujaEvent,
   gurudevEvents: ProcessedGurudevEvent[]
@@ -132,8 +130,15 @@ export function doesEventOverlapWithGurudevPresence(
     return false;
   }
 
+  // Check if the puja event is a long-running "repeatable" event
+  if (pujaEvent.parsedEndDate && isValidDate(pujaEvent.parsedEndDate) && isValidDate(pujaEvent.parsedStartDate)) {
+    const durationInDays = differenceInDays(pujaEvent.parsedEndDate, pujaEvent.parsedStartDate);
+    if (durationInDays > REPEATABLE_EVENT_DURATION_THRESHOLD_DAYS) {
+      return false; // Exclude long-running events from Gurudev presence marking
+    }
+  }
+
   const pujaEventStart = startOfDay(pujaEvent.parsedStartDate);
-  // For a single-day event, its range for overlap purposes is the whole day.
   const pujaEventEnd = pujaEvent.parsedEndDate && isValidDate(pujaEvent.parsedEndDate)
                       ? endOfDay(pujaEvent.parsedEndDate)
                       : endOfDay(pujaEvent.parsedStartDate); 
@@ -145,13 +150,9 @@ export function doesEventOverlapWithGurudevPresence(
     const gurudevPresenceStart = startOfDay(ge.startDate);
     const gurudevPresenceEnd = endOfDay(ge.endDate);
 
-    // Check for overlap:
-    // Puja event starts before or at the same time Gurudev presence ends
-    // AND Puja event ends after or at the same time Gurudev presence starts
     if (pujaEventStart <= gurudevPresenceEnd && pujaEventEnd >= gurudevPresenceStart) {
       return true;
     }
   }
   return false;
 }
-
