@@ -1,5 +1,5 @@
 
-import Image from 'next/image';
+import PujaImage from './PujaImage';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,14 +19,13 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
   return (
     <Card className={`flex flex-col overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 bg-card ${isTomorrowHighlight ? 'border-2 border-primary ring-2 ring-primary/50' : 'border-border'}`}>
       <div className="relative w-full h-48 sm:h-56">
-        <Image
-          src={`https://placehold.co/600x400.png`}
+        <PujaImage
+          seva={event.Activity}
           alt={event.Seva}
-          fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover"
-          data-ai-hint={event.imageHint || "spiritual event"}
-          priority={isTomorrowHighlight} 
+          dataAiHint={event.imageHint || "spiritual event"}
+          priority={isTomorrowHighlight}
         />
         {isTomorrowHighlight && (
           <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold shadow-md">
