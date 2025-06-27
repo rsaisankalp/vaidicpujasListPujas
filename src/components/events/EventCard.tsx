@@ -3,8 +3,16 @@ import PujaImage from './PujaImage';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, MapPin, Sparkles, Zap } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Sparkles, Zap, UtensilsCrossed, Bell, BookOpen, Flower2 } from 'lucide-react';
 import type { ProcessedPujaEvent } from '@/types';
+
+const iconMap = {
+  UtensilsCrossed,
+  Bell,
+  BookOpen,
+  Flower2,
+  Zap,
+};
 
 interface EventCardProps {
   event: ProcessedPujaEvent;
@@ -12,7 +20,7 @@ interface EventCardProps {
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => {
-  const EventIconComponent = event.icon || Zap;
+  const EventIconComponent = event.icon ? iconMap[event.icon as keyof typeof iconMap] : Zap;
   const registrationBaseUrl = "https://vaidicpujas.org";
 
   return (

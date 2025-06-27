@@ -18,7 +18,7 @@ export interface ProcessedPujaEvent extends PujaEventData {
   parsedEndDate?: Date; // For date ranges
   category?: string;
   tags?: string[];
-  icon?: ElementType;
+  icon?: string;
   imageHint?: string;
   formattedDate: string; // Will show full range if applicable, or formatted single date
   formattedTime: string; // Based on parsedStartDate

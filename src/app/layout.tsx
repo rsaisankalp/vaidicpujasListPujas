@@ -1,11 +1,25 @@
 
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
+import { Playfair_Display, PT_Sans } from 'next/font/google';
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from '@/components/ui/toaster';
+import { cn } from '@/lib/utils';
+
+const fontHeadline = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-headline',
+});
+
+const fontBody = PT_Sans({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-body',
+});
 
 export const metadata: Metadata = {
   title: 'Vaidic Dharma Sansthan - Discover Sacred Pujas',
-  description: 'Find and register for Vaidic puja events. Connect with divine energies through ancient rituals.',
+  description:
+    'Find and register for Vaidic puja events. Connect with divine energies through ancient rituals.',
 };
 
 export default function RootLayout({
@@ -14,13 +28,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={cn(
+          'font-body antialiased',
+          fontHeadline.variable,
+          fontBody.variable
+        )}
+      >
         {children}
         <Toaster />
       </body>
