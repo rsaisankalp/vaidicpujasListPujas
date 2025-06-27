@@ -34,7 +34,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
         {event.isGurudevPresence && (
            <div className="absolute bottom-3 left-3 bg-accent text-accent-foreground px-3 py-1.5 rounded-full text-xs font-semibold shadow-md flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
-            <span>Gurudev's Presence</span>
+            <span>Gurudev is in Ashram</span>
           </div>
         )}
       </div>

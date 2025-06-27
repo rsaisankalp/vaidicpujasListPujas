@@ -131,6 +131,10 @@ export function doesEventOverlapWithGurudevPresence(
   if (!isValidDate(pujaEvent.parsedStartDate) || !gurudevEvents || gurudevEvents.length === 0) {
     return false;
   }
+  
+  if (isValidDate(pujaEvent.parsedEndDate))
+    return false; // Gurudev presence is not applicable for events with end dates
+
 
   // Check if the puja event is a long-running "repeatable" event (using a general threshold for this check)
   if (pujaEvent.parsedEndDate && isValidDate(pujaEvent.parsedEndDate) && isValidDate(pujaEvent.parsedStartDate)) {
