@@ -9,10 +9,9 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Heart, Search as SearchIcon } from 'lucide-react';
 import type { ProcessedPujaEvent, PujaEventData } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 const getDonationVisuals = (activity: string, seva: string): { icon: React.ElementType, imageHint: string } => {
-  // Example: customize based on activity or seva if needed
-  // For now, all donations use the Heart icon and a general hint.
   return { icon: Heart, imageHint: 'charity donation' };
 };
 
@@ -20,6 +19,7 @@ export default function DonationsPage() {
   const [allProcessedDonations, setAllProcessedDonations] = useState<ProcessedPujaEvent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function loadDonations() {
@@ -41,7 +41,6 @@ export default function DonationsPage() {
             if (!event.Date.toLowerCase().includes(' to ') && isValidDate(parsedStartDate)) {
               displayDate = formatPujaDate(parsedStartDate);
             }
-            // For ranges, the original date string is used by default if it includes ' to '
 
             return {
               ...event,
@@ -55,7 +54,6 @@ export default function DonationsPage() {
               formattedTime: isValidDate(parsedStartDate) ? formatPujaTime(parsedStartDate) : event.Time,
             };
           } catch (error) {
-            // console.error("Error processing donation event:", event.Seva, error);
             const { startDate: parsedStartDate, endDate: parsedEndDate } = parsePujaDates(event.Date, event.Time); 
             const visuals = getDonationVisuals(event.Activity || "", event.Seva || "");
             const uniqueId = event.UniqueID || event.details || `${event.Seva}-${event.Date}-${event.Time}-${Math.random().toString(36).substring(7)}`;
@@ -88,14 +86,18 @@ export default function DonationsPage() {
         });
         setAllProcessedDonations(processedDonations);
       } catch (error) {
-        // console.error("Failed to load or process donations:", error);
         setAllProcessedDonations([]);
+        toast({
+          variant: 'destructive',
+          title: 'Error loading donations',
+          description: 'Could not fetch donation data. Please check your connection and try again.',
+        });
       } finally {
         setIsLoading(false);
       }
     }
     loadDonations();
-  }, []);
+  }, [toast]);
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {

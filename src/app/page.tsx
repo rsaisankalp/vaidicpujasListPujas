@@ -156,7 +156,16 @@ async function loadAppData() {
 }
 
 export default async function Home() {
-  const allProcessedEvents = await loadAppData();
+  let allProcessedEvents: ProcessedPujaEvent[] = [];
+  let error: string | undefined = undefined;
+
+  try {
+    allProcessedEvents = await loadAppData();
+  } catch (e) {
+    error = "Failed to load event data. Please check your connection and try refreshing the page.";
+    allProcessedEvents = []; // Ensure it's an empty array on error
+  }
+  
   const todayForFiltering = new Date();
 
   const upcomingEvents = allProcessedEvents.filter(event => {
@@ -191,6 +200,7 @@ export default async function Home() {
       thisWeekEvents={thisWeekEvents}
       otherUpcomingEvents={otherUpcomingEvents}
       tomorrowSectionTitle={tomorrowSectionTitle}
+      error={error}
     />
   );
 }
