@@ -3,7 +3,7 @@ import PujaImage from './PujaImage';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, MapPin, Sparkles, Zap, UtensilsCrossed, Bell, BookOpen, Flower2 } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Sparkles, Zap, UtensilsCrossed, Bell, BookOpen, Flower2, Heart } from 'lucide-react';
 import type { ProcessedPujaEvent } from '@/types';
 
 const iconMap = {
@@ -12,6 +12,7 @@ const iconMap = {
   BookOpen,
   Flower2,
   Zap,
+  Heart,
 };
 
 interface EventCardProps {
@@ -69,12 +70,16 @@ const EventCard: React.FC<EventCardProps> = ({ event, isTomorrowHighlight }) => 
         </div>
         <div className="flex items-start text-sm mb-3">
           <EventIconComponent className="w-4 h-4 mr-2 mt-0.5 shrink-0 text-primary" />
-          <span className="text-muted-foreground">{event.Activity ? event.Activity.split('-').pop() : 'Event'}</span>
+          {event.category === 'Donation' ? (
+             <span className="text-muted-foreground">{event.details}</span>
+          ) : (
+            <span className="text-muted-foreground">{event.Activity ? event.Activity.split('-').pop() : 'Event'}</span>
+          )}
         </div>
         
       </CardContent>
       <CardFooter className="p-4 mt-auto bg-card">
-        <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 transition-transform transform hover:scale-105 py-3 text-base">
+        <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-transform transform hover:scale-105 py-3 text-base">
           <Link href={`${registrationBaseUrl}${event.link}`} target="_blank" rel="noopener noreferrer">
             Register
           </Link>

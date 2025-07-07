@@ -11,8 +11,8 @@ import { Heart, Search as SearchIcon } from 'lucide-react';
 import type { ProcessedPujaEvent, PujaEventData } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
-const getDonationVisuals = (activity: string, seva: string): { icon: React.ElementType, imageHint: string } => {
-  return { icon: Heart, imageHint: 'charity donation' };
+const getDonationVisuals = (activity: string, seva: string): { icon: string, imageHint: string } => {
+  return { icon: 'Heart', imageHint: 'charity donation' };
 };
 
 export default function DonationsPage() {
