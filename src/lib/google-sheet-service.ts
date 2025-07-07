@@ -1,4 +1,3 @@
-
 // src/lib/google-sheet-service.ts
 import type { PujaEventData, GurudevEventDataCsv, ProcessedGurudevEvent } from '@/types';
 import { parse as parseDateFns, isValid as isValidDateFns } from 'date-fns';
@@ -115,40 +114,27 @@ function csvToGurudevEventData(csv: string): ProcessedGurudevEvent[] {
 
 
 export async function fetchEvents(): Promise<PujaEventData[]> {
-  try {
-    const response = await fetch(GOOGLE_SHEET_CSV_URL, { next: { revalidate: 3600 } }); // Revalidate Puja events hourly
-    if (!response.ok) {
-      // console.error(`Failed to fetch Puja Events CSV: ${response.status} ${response.statusText}`);
-      return [];
-    }
-    let csvData = await response.text();
-    // Remove BOM if present
-    if (csvData.charCodeAt(0) === 0xFEFF) {
-      csvData = csvData.substring(1);
-    }
-    return csvToPujaEventData(csvData);
-  } catch (error) {
-    // console.error("Error fetching or parsing Puja Events CSV:", error);
-    return [];
+  const response = await fetch(GOOGLE_SHEET_CSV_URL, { next: { revalidate: 3600 } });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Puja Events CSV: ${response.status} ${response.statusText}`);
   }
+  let csvData = await response.text();
+  // Remove BOM if present
+  if (csvData.charCodeAt(0) === 0xFEFF) {
+    csvData = csvData.substring(1);
+  }
+  return csvToPujaEventData(csvData);
 }
 
 export async function fetchGurudevEvents(): Promise<ProcessedGurudevEvent[]> {
-  try {
-    const response = await fetch(GURUDEV_EVENTS_CSV_URL, { next: { revalidate: 43200 } }); // Revalidate Gurudev events every 12 hours
-    if (!response.ok) {
-      // console.error(`Failed to fetch Gurudev Events CSV: ${response.status} ${response.statusText}`);
-      return [];
-    }
-    let csvData = await response.text();
-    // Remove BOM if present
-    if (csvData.charCodeAt(0) === 0xFEFF) {
-      csvData = csvData.substring(1);
-    }
-    return csvToGurudevEventData(csvData);
-  } catch (error) {
-    // console.error("Error fetching or parsing Gurudev Events CSV:", error);
-    return [];
+  const response = await fetch(GURUDEV_EVENTS_CSV_URL, { next: { revalidate: 43200 } });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Gurudev Events CSV: ${response.status} ${response.statusText}`);
   }
+  let csvData = await response.text();
+  // Remove BOM if present
+  if (csvData.charCodeAt(0) === 0xFEFF) {
+    csvData = csvData.substring(1);
+  }
+  return csvToGurudevEventData(csvData);
 }
-

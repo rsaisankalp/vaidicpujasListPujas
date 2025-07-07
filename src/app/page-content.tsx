@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import EventSection from '@/components/events/EventSection';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Zap, Search as SearchIcon } from 'lucide-react';
 import type { ProcessedPujaEvent } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface PageContentProps {
   allProcessedEvents: ProcessedPujaEvent[];
@@ -13,6 +14,7 @@ interface PageContentProps {
   thisWeekEvents: ProcessedPujaEvent[];
   otherUpcomingEvents: ProcessedPujaEvent[];
   tomorrowSectionTitle: string;
+  error?: string;
 }
 
 export default function PageContent({
@@ -21,8 +23,20 @@ export default function PageContent({
   thisWeekEvents,
   otherUpcomingEvents,
   tomorrowSectionTitle,
+  error,
 }: PageContentProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error loading events',
+        description: error,
+      });
+    }
+  }, [error, toast]);
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -94,7 +108,7 @@ export default function PageContent({
               />
             )}
 
-            {allProcessedEvents.length === 0 && (
+            {allProcessedEvents.length === 0 && !error && (
               <div className="text-center py-10">
                 <Zap className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                 <p className="text-xl text-muted-foreground">
